@@ -1,0 +1,78 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  OWNER
+}
+
+model User {
+  id           String     @id @default(uuid())
+  email        String     @unique @db.VarChar(255)
+  passwordHash String     @db.Text
+  fullName     String     @db.VarChar(150)
+  avatarUrl    String?    @db.Text
+  role         Role       @default(OWNER)
+  isActive     Boolean    @default(true)
+  createdAt    DateTime   @default(now())
+  updatedAt      DateTime         @updatedAt
+  refreshSessions RefreshSession[]
+
+  @@index([email])
+}
+
+enum AuditAction {
+  LOGIN_SUCCESS
+  LOGIN_FAILED
+  LOGOUT
+  PASSWORD_CHANGED
+  TOKEN_REFRESH
+  TOKEN_REUSE_DETECTED
+}
+
+enum RefreshSessionRevokeReason {
+  LOGOUT
+  PASSWORD_CHANGED
+  TOKEN_REUSE
+}
+
+model RefreshSession {
+  id             String                     @id @default(uuid())
+  userId         String
+  tokenHash      String                     @db.Text
+  isRevoked      Boolean                    @default(false)
+  expiresAt      DateTime
+  ipAddress      String?
+  userAgent      String?
+  createdAt      DateTime                   @default(now())
+  updatedAt      DateTime                   @updatedAt
+  lastUsedAt     DateTime?
+  rotatedAt      DateTime?
+  revokedAt      DateTime?
+  revokedReason  RefreshSessionRevokeReason?
+  rotationCounter Int                       @default(0)
+
+  user           User                       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@index([isRevoked])
+}
+
+model AuditLog {
+  id        String      @id @default(uuid())
+  userId    String
+  action    AuditAction
+  entity    String?
+  entityId  String?
+  metadata  Json?
+  createdAt DateTime    @default(now())
+
+  @@index([userId])
+  @@index([createdAt])
+}
