@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Query, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query, UseGuards, Request } from '@nestjs/common';
 import { PropertiesService } from './properties.service';
 import { PropertyQueryDto } from './dto/property-query.dto';
 import { CreatePropertyDto } from './dto/create-property.dto';
@@ -36,5 +36,11 @@ export class PropertiesController {
   ) {
     const ownerId = req.user.id;
     return this.propertiesService.update(ownerId, id, updatePropertyDto);
+  }
+
+  @Delete(':id')
+  remove(@Request() req, @Param('id') id: string) {
+    const ownerId = req.user.id;
+    return this.propertiesService.remove(ownerId, id);
   }
 }

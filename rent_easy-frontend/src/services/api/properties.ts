@@ -18,4 +18,8 @@ export const propertiesApi = {
     const response = await axiosInstance.patch(`/v1/properties/${id}`, payload);
     return response.data;
   },
+  remove: async (id: string): Promise<{ message: string; data: null }> => {
+    const response = await axiosInstance.delete(`/v1/properties/${id}`);
+    return response.data;
+  },
 };

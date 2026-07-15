@@ -263,4 +263,64 @@ export class PropertiesService {
       throw error;
     }
   }
+
+  // TODO: Refactor this logic once the Room module is implemented
+  private async canDeleteProperty(propertyId: string): Promise<boolean> {
+    // Mock room count for now.
+    // In the future:
+    // const roomCount = await this.prisma.room.count({ where: { propertyId } });
+    // return roomCount === 0;
+    const roomCount = 0;
+    return roomCount === 0;
+  }
+
+  async remove(ownerId: string, id: string) {
+    const property = await this.prisma.property.findFirst({
+      where: {
+        id,
+        ownerId,
+        deletedAt: null,
+      },
+    });
+
+    if (!property) {
+      throw new NotFoundException({
+        message: 'Không tìm thấy tài sản.',
+        code: 'PROPERTY_NOT_FOUND',
+      });
+    }
+
+    const canDelete = await this.canDeleteProperty(id);
+    if (!canDelete) {
+      throw new ConflictException({
+        message: 'Property vẫn còn phòng, không thể xóa.',
+        code: 'PROPERTY_HAS_ROOMS',
+      });
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.property.update({
+        where: { id },
+        data: { deletedAt: new Date() },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          userId: ownerId,
+          action: AuditAction.PROPERTY_DELETED,
+          entity: 'Property',
+          entityId: id,
+          metadata: {
+            propertyId: id,
+            propertyName: property.name,
+          },
+        },
+      });
+    });
+
+    return {
+      message: 'Property deleted successfully',
+      data: null, // Standardized response as requested
+    };
+  }
 }

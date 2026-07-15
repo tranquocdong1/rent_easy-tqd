@@ -7,10 +7,20 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import Link from 'next/link';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 // Ensure standard HTML table styles via Tailwind
 function PropertiesPageContent() {
-  const [data, setData] = useState<PaginatedResponse<Property>['data'] | null>(null);
+  const [data, setData] = useState<PaginatedResponse<Property> | null>(null);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState<PropertyQuery>({
     page: 1,
@@ -21,11 +31,15 @@ function PropertiesPageContent() {
     status: undefined,
   });
 
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   const fetchProperties = useCallback(async () => {
     try {
       setLoading(true);
       const res = await propertiesApi.getAll(query);
-      setData(res.data);
+      setData(res);
     } catch (error) {
       console.error('Failed to fetch properties:', error);
     } finally {
@@ -51,8 +65,24 @@ function PropertiesPageContent() {
   };
 
   const handlePageChange = (newPage: number) => {
-    if (data?.meta && newPage >= 1 && newPage <= data.meta.totalPages) {
+    if (data?.data?.meta && newPage >= 1 && newPage <= data.data.meta.totalPages) {
       setQuery((prev) => ({ ...prev, page: newPage }));
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!deleteId) return;
+    try {
+      setIsDeleting(true);
+      setDeleteError(null);
+      await propertiesApi.remove(deleteId);
+      setDeleteId(null);
+      fetchProperties();
+    } catch (error: any) {
+      const errRes = error.response?.data;
+      setDeleteError(errRes?.message || 'Có lỗi xảy ra khi xóa Property');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -111,14 +141,14 @@ function PropertiesPageContent() {
                   Đang tải...
                 </td>
               </tr>
-            ) : data?.items.length === 0 ? (
+            ) : data?.data?.items.length === 0 ? (
               <tr>
                 <td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">
                   Không tìm thấy dữ liệu.
                 </td>
               </tr>
             ) : (
-              data?.items.map((property) => (
+              data?.data?.items.map((property) => (
                 <tr key={property.id} className="border-b last:border-0 hover:bg-muted/50">
                   <td className="px-4 py-3 font-medium">{property.name}</td>
                   <td className="px-4 py-3">{property.propertyType}</td>
@@ -129,10 +159,16 @@ function PropertiesPageContent() {
                   </td>
                   <td className="px-4 py-3">{property.roomCount}</td>
                   <td className="px-4 py-3">{new Date(property.updatedAt).toLocaleDateString('vi-VN')}</td>
-                  <td className="px-4 py-3 text-right">
+                  <td className="px-4 py-3 text-right space-x-4">
                     <Link href={`/dashboard/properties/${property.id}/edit`} className="text-blue-600 hover:underline">
                       Sửa
                     </Link>
+                    <button
+                      onClick={() => setDeleteId(property.id)}
+                      className="text-red-600 hover:underline cursor-pointer"
+                    >
+                      Xóa
+                    </button>
                   </td>
                 </tr>
               ))
@@ -142,31 +178,53 @@ function PropertiesPageContent() {
       </div>
 
       {/* Pagination */}
-      {data?.meta && data.meta.totalPages > 1 && (
+      {data?.data?.meta && data.data.meta.totalPages > 1 && (
         <div className="flex items-center justify-between">
           <div className="text-sm text-muted-foreground">
-            Hiển thị {(data.meta.currentPage - 1) * data.meta.itemsPerPage + 1} đến {Math.min(data.meta.currentPage * data.meta.itemsPerPage, data.meta.totalItems)} của {data.meta.totalItems} kết quả
+            Hiển thị {(data.data.meta.currentPage - 1) * data.data.meta.itemsPerPage + 1} đến {Math.min(data.data.meta.currentPage * data.data.meta.itemsPerPage, data.data.meta.totalItems)} của {data.data.meta.totalItems} kết quả
           </div>
           <div className="flex space-x-2">
             <Button 
               variant="outline" 
               size="sm" 
-              onClick={() => handlePageChange(data.meta.currentPage - 1)}
-              disabled={data.meta.currentPage === 1}
+              onClick={() => handlePageChange(data.data.meta.currentPage - 1)}
+              disabled={data.data.meta.currentPage === 1}
             >
               Trước
             </Button>
             <Button 
               variant="outline" 
               size="sm" 
-              onClick={() => handlePageChange(data.meta.currentPage + 1)}
-              disabled={data.meta.currentPage === data.meta.totalPages}
+              onClick={() => handlePageChange(data.data.meta.currentPage + 1)}
+              disabled={data.data.meta.currentPage === data.data.meta.totalPages}
             >
               Tiếp
             </Button>
           </div>
         </div>
       )}
+
+      <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Xóa Property</AlertDialogTitle>
+            <AlertDialogDescription>
+              Bạn có chắc chắn muốn xóa Property này không? Hành động này không thể hoàn tác.
+            </AlertDialogDescription>
+            {deleteError && (
+              <p className="text-sm text-red-500 mt-2">{deleteError}</p>
+            )}
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setDeleteId(null)} disabled={isDeleting}>
+              Hủy
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} disabled={isDeleting} className="bg-red-600 hover:bg-red-700">
+              {isDeleting ? 'Đang xóa...' : 'Xác nhận xóa'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

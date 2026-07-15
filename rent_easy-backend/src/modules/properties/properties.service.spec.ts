@@ -161,5 +161,32 @@ describe('PropertiesService', () => {
       await expect(service.update('owner-id', '1', { name: 'New' })).rejects.toThrow('Property đã tồn tại. Vui lòng chọn tên khác.');
     });
   });
+
+  describe('remove', () => {
+    it('should delete a property successfully', async () => {
+      const mockProperty = { id: '1', name: 'Prop', ownerId: 'owner-id' };
+      (prisma.property.findFirst as jest.Mock).mockResolvedValue(mockProperty);
+      jest.spyOn(service as any, 'canDeleteProperty').mockResolvedValue(true);
+
+      const result = await service.remove('owner-id', '1');
+      expect(result.message).toBe('Property deleted successfully');
+      expect(result.data).toBeNull();
+      expect(prisma.auditLog.create).toHaveBeenCalled();
+    });
+
+    it('should throw NotFoundException if property not found', async () => {
+      (prisma.property.findFirst as jest.Mock).mockResolvedValue(null);
+      await expect(service.remove('owner-id', '1')).rejects.toThrow('Không tìm thấy tài sản.');
+    });
+
+    it('should throw ConflictException if property has rooms', async () => {
+      const mockProperty = { id: '1', name: 'Prop', ownerId: 'owner-id' };
+      (prisma.property.findFirst as jest.Mock).mockResolvedValue(mockProperty);
+      jest.spyOn(service as any, 'canDeleteProperty').mockResolvedValue(false);
+
+      await expect(service.remove('owner-id', '1')).rejects.toThrow('Property vẫn còn phòng, không thể xóa.');
+    });
+  });
 });
+
 
