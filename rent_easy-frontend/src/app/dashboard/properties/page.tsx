@@ -101,18 +101,19 @@ function PropertiesPageContent() {
               <th className="px-4 py-3 cursor-pointer hover:bg-muted" onClick={() => handleSort('updatedAt')}>
                 Cập nhật lần cuối {query.sortBy === 'updatedAt' && (query.sortOrder === 'asc' ? '↑' : '↓')}
               </th>
+              <th className="px-4 py-3 text-right">Thao tác</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">
+                <td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">
                   Đang tải...
                 </td>
               </tr>
             ) : data?.items.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">
+                <td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">
                   Không tìm thấy dữ liệu.
                 </td>
               </tr>
@@ -128,6 +129,11 @@ function PropertiesPageContent() {
                   </td>
                   <td className="px-4 py-3">{property.roomCount}</td>
                   <td className="px-4 py-3">{new Date(property.updatedAt).toLocaleDateString('vi-VN')}</td>
+                  <td className="px-4 py-3 text-right">
+                    <Link href={`/dashboard/properties/${property.id}/edit`} className="text-blue-600 hover:underline">
+                      Sửa
+                    </Link>
+                  </td>
                 </tr>
               ))
             )}

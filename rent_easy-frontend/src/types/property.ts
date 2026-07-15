@@ -45,3 +45,12 @@ export interface CreatePropertyPayload {
   description?: string;
 }
 
+export interface UpdatePropertyPayload {
+  name?: string;
+  propertyType?: PropertyType;
+  status?: PropertyStatus;
+  address?: string;
+  description?: string | null;
+}
+
+

@@ -1,7 +1,8 @@
-import { ConflictException, Injectable } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { PropertyQueryDto } from './dto/property-query.dto';
 import { CreatePropertyDto } from './dto/create-property.dto';
+import { UpdatePropertyDto } from './dto/update-property.dto';
 import { PropertyResponseDto } from './dto/property-response.dto';
 import { AuditAction, Prisma, PropertyStatus } from '@prisma/client';
 
@@ -121,6 +122,136 @@ export class PropertiesService {
       };
     } catch (error) {
       // Handle Prisma P2002 Unique Constraint violation just in case of race condition
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        if (error.code === 'P2002') {
+          throw new ConflictException({
+            message: 'Property đã tồn tại. Vui lòng chọn tên khác.',
+            code: 'PROPERTY_ALREADY_EXISTS',
+          });
+        }
+      }
+      throw error;
+    }
+  }
+
+  async findOne(ownerId: string, id: string) {
+    const property = await this.prisma.property.findFirst({
+      where: {
+        id,
+        ownerId,
+        deletedAt: null,
+      },
+    });
+
+    if (!property) {
+      throw new NotFoundException({
+        message: 'Không tìm thấy tài sản.',
+        code: 'PROPERTY_NOT_FOUND',
+      });
+    }
+
+    return {
+      message: 'Success',
+      data: PropertyResponseDto.fromEntity(property, 0),
+    };
+  }
+
+  async update(ownerId: string, id: string, updatePropertyDto: UpdatePropertyDto) {
+    if (Object.keys(updatePropertyDto).length === 0) {
+      throw new BadRequestException({
+        message: 'Không có dữ liệu để cập nhật.',
+        code: 'NO_FIELDS_TO_UPDATE',
+      });
+    }
+
+    // Verify existence & ownership
+    const existingProperty = await this.prisma.property.findFirst({
+      where: {
+        id,
+        ownerId,
+        deletedAt: null,
+      },
+    });
+
+    if (!existingProperty) {
+      throw new NotFoundException({
+        message: 'Không tìm thấy tài sản.',
+        code: 'PROPERTY_NOT_FOUND',
+      });
+    }
+
+    // Filter fields to find only what's changed
+    const changedFields: any = {};
+    for (const key of Object.keys(updatePropertyDto)) {
+      if ((updatePropertyDto as any)[key] !== (existingProperty as any)[key]) {
+        changedFields[key] = (updatePropertyDto as any)[key];
+      }
+    }
+
+    if (Object.keys(changedFields).length === 0) {
+      throw new BadRequestException({
+        message: 'Không có thay đổi nào so với dữ liệu hiện tại.',
+        code: 'NO_FIELDS_TO_UPDATE',
+      });
+    }
+
+    // Check unique name if name is changed
+    if (changedFields.name) {
+      const duplicateProperty = await this.prisma.property.findFirst({
+        where: {
+          ownerId,
+          name: changedFields.name,
+          deletedAt: null,
+          id: { not: id },
+        },
+      });
+
+      if (duplicateProperty) {
+        throw new ConflictException({
+          message: 'Property đã tồn tại. Vui lòng chọn tên khác.',
+          code: 'PROPERTY_ALREADY_EXISTS',
+        });
+      }
+    }
+
+    try {
+      const property = await this.prisma.$transaction(async (tx) => {
+        const updatedProperty = await tx.property.update({
+          where: { id },
+          data: changedFields,
+        });
+
+        // Compute before/after for audit
+        const before: any = {};
+        const after: any = {};
+        for (const key of Object.keys(changedFields)) {
+          before[key] = (existingProperty as any)[key];
+          after[key] = (updatedProperty as any)[key];
+        }
+
+        await tx.auditLog.create({
+          data: {
+            userId: ownerId,
+            action: AuditAction.PROPERTY_UPDATED,
+            entity: 'Property',
+            entityId: id,
+            metadata: {
+              propertyId: id,
+              propertyName: updatedProperty.name,
+              before,
+              after,
+            },
+          },
+        });
+
+        return updatedProperty;
+      });
+
+      return {
+        message: 'Property updated successfully',
+        data: PropertyResponseDto.fromEntity(property, 0),
+      };
+    } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         if (error.code === 'P2002') {
           throw new ConflictException({

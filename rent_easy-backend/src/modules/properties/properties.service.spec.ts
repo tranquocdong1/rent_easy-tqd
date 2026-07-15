@@ -104,4 +104,62 @@ describe('PropertiesService', () => {
       expect(prisma.property.create).not.toHaveBeenCalled();
     });
   });
+
+  describe('findOne', () => {
+    it('should return a property successfully', async () => {
+      const mockProperty = { id: '1', name: 'Prop', ownerId: 'owner-id' };
+      (prisma.property.findFirst as jest.Mock).mockResolvedValue(mockProperty);
+
+      const result = await service.findOne('owner-id', '1');
+      expect(result.data.name).toBe('Prop');
+    });
+
+    it('should throw NotFoundException if property does not exist', async () => {
+      (prisma.property.findFirst as jest.Mock).mockResolvedValue(null);
+      await expect(service.findOne('owner-id', '1')).rejects.toThrow('Không tìm thấy tài sản.');
+    });
+  });
+
+  describe('update', () => {
+    it('should update a property successfully', async () => {
+      const existingProperty = { id: '1', name: 'Old', ownerId: 'owner-id', description: null };
+      const updateDto = { name: 'New' };
+      const updatedProperty = { ...existingProperty, name: 'New' };
+
+      (prisma.property.findFirst as jest.Mock).mockImplementation(async (args) => {
+        // Mock findFirst for existence
+        if (args.where.id === '1') return existingProperty;
+        // Mock findFirst for duplicate check
+        if (args.where.name === 'New') return null;
+      });
+
+      (prisma.property.update as jest.Mock).mockResolvedValue(updatedProperty);
+      (prisma.auditLog.create as jest.Mock).mockResolvedValue({});
+
+      const result = await service.update('owner-id', '1', updateDto as any);
+      expect(result.data.name).toBe('New');
+      expect(prisma.auditLog.create).toHaveBeenCalled();
+    });
+
+    it('should throw BadRequestException if payload is empty', async () => {
+      await expect(service.update('owner-id', '1', {})).rejects.toThrow('Không có dữ liệu để cập nhật.');
+    });
+
+    it('should throw BadRequestException if no fields changed', async () => {
+      const existingProperty = { id: '1', name: 'Old', ownerId: 'owner-id' };
+      (prisma.property.findFirst as jest.Mock).mockResolvedValue(existingProperty);
+      await expect(service.update('owner-id', '1', { name: 'Old' })).rejects.toThrow('Không có thay đổi nào so với dữ liệu hiện tại.');
+    });
+
+    it('should throw ConflictException if new name already exists', async () => {
+      const existingProperty = { id: '1', name: 'Old', ownerId: 'owner-id' };
+      (prisma.property.findFirst as jest.Mock).mockImplementation(async (args) => {
+        if (args.where.id === '1') return existingProperty;
+        if (args.where.name === 'New') return { id: '2', name: 'New' };
+      });
+
+      await expect(service.update('owner-id', '1', { name: 'New' })).rejects.toThrow('Property đã tồn tại. Vui lòng chọn tên khác.');
+    });
+  });
 });
+
