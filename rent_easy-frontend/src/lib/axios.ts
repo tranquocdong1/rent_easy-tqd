@@ -1,61 +1,67 @@
-import axios from 'axios';
+import axios, { InternalAxiosRequestConfig } from 'axios';
 import { useAuthStore } from './auth-store';
 
 const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api',
-  withCredentials: true, // Important for sending/receiving HttpOnly cookies
+  withCredentials: true, // Sends HttpOnly cookies
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-// Request interceptor to add the access token to headers
-api.interceptors.request.use((config) => {
-  const { accessToken } = useAuthStore.getState();
-  if (accessToken) {
-    config.headers['Authorization'] = `Bearer ${accessToken}`;
-  }
-  return config;
-}, (error) => Promise.reject(error));
+let isRefreshing = false;
+let failedQueue: { resolve: (value?: unknown) => void; reject: (reason?: any) => void }[] = [];
 
-// Response interceptor to handle 401 and silent refresh
+const processQueue = (error: any, token: string | null = null) => {
+  failedQueue.forEach((prom) => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
+  });
+  failedQueue = [];
+};
+
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
-    const originalRequest = error.config;
+    const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
     
-    // If the error is 401 and not a retry, and not calling the refresh endpoint itself
     if (
       error.response?.status === 401 && 
       !originalRequest._retry && 
       !originalRequest.url?.includes('/v1/auth/refresh') &&
       !originalRequest.url?.includes('/v1/auth/login')
     ) {
+      if (isRefreshing) {
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        }).then(() => {
+          return api(originalRequest);
+        }).catch((err) => {
+          return Promise.reject(err);
+        });
+      }
+
       originalRequest._retry = true;
+      isRefreshing = true;
+
       try {
-        const refreshResponse = await api.post('/v1/auth/refresh');
-        const { accessToken } = refreshResponse.data.data;
+        await api.post('/v1/auth/refresh');
         
-        // Use getState to access user, but we don't have new user info from refresh API
-        // Typically, we only update the token.
-        const { user } = useAuthStore.getState();
-        if (user) {
-           useAuthStore.getState().setAuth(accessToken, user);
-        }
-        
-        // Retry the original request
-        originalRequest.headers['Authorization'] = `Bearer ${accessToken}`;
+        processQueue(null);
         return api(originalRequest);
       } catch (refreshError) {
-        // Refresh failed (token expired, reused, etc.)
-        useAuthStore.getState().clearAuth();
+        processQueue(refreshError, null);
         
-        // Ideally we redirect to login here, but since this is not in a component,
-        // window.location.href works for client-side redirection.
+        useAuthStore.getState().clearAuth();
         if (typeof window !== 'undefined') {
           window.location.href = '/login';
         }
         return Promise.reject(refreshError);
+      } finally {
+        isRefreshing = false;
       }
     }
     

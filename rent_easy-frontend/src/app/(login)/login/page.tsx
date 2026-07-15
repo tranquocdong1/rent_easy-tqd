@@ -35,9 +35,9 @@ export default function LoginPage() {
     setError(null);
     try {
       const response = await api.post("/v1/auth/login", data);
-      const { accessToken, user } = response.data.data;
+      const { user } = response.data.data;
       
-      setAuth(accessToken, user);
+      setAuth(user);
       
       // Redirect to dashboard
       router.push("/dashboard");

@@ -9,17 +9,19 @@ export interface UserProfile {
 }
 
 interface AuthState {
-  accessToken: string | null;
   user: UserProfile | null;
   isAuthenticated: boolean;
-  setAuth: (accessToken: string, user: UserProfile) => void;
+  isInitialized: boolean;
+  setAuth: (user: UserProfile) => void;
   clearAuth: () => void;
+  setInitialized: () => void;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
-  accessToken: null,
   user: null,
   isAuthenticated: false,
-  setAuth: (accessToken, user) => set({ accessToken, user, isAuthenticated: true }),
-  clearAuth: () => set({ accessToken: null, user: null, isAuthenticated: false }),
+  isInitialized: false,
+  setAuth: (user) => set({ user, isAuthenticated: true, isInitialized: true }),
+  clearAuth: () => set({ user: null, isAuthenticated: false, isInitialized: true }),
+  setInitialized: () => set({ isInitialized: true }),
 }));

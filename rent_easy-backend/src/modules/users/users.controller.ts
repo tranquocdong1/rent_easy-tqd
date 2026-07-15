@@ -1,36 +1,19 @@
-import { Controller, Get, Patch, Body, Req, UnauthorizedException, Headers, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Patch, Body, Req, UnauthorizedException, HttpCode, HttpStatus, UseGuards } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
-import { JwtService } from '@nestjs/jwt';
-import { ConfigService } from '@nestjs/config';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @Controller('v1/users')
+@UseGuards(JwtAuthGuard)
 export class UsersController {
   constructor(
     private readonly usersService: UsersService,
-    private readonly jwtService: JwtService,
-    private readonly configService: ConfigService,
   ) {}
 
-  private extractUserId(authHeader: string): string {
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      throw new UnauthorizedException({ message: 'Missing or invalid token', code: 'UNAUTHORIZED' });
-    }
-    const token = authHeader.split(' ')[1];
-    try {
-      const payload = this.jwtService.verify(token, {
-        secret: this.configService.get<string>('JWT_ACCESS_SECRET') || 'accessSecret'
-      });
-      return payload.sub;
-    } catch (e) {
-      throw new UnauthorizedException({ message: 'Invalid or expired token', code: 'UNAUTHORIZED' });
-    }
-  }
-
   @Get('me')
-  async getProfile(@Headers('authorization') authHeader: string) {
-    const userId = this.extractUserId(authHeader);
+  async getProfile(@Req() req: any) {
+    const userId = req.user.id;
     const user = await this.usersService.findById(userId);
     if (!user) throw new UnauthorizedException({ message: 'User not found', code: 'USER_NOT_FOUND' });
     
@@ -41,28 +24,25 @@ export class UsersController {
 
   @Patch('me')
   async updateProfile(
-    @Headers('authorization') authHeader: string,
+    @Req() req: any,
     @Body() dto: UpdateProfileDto
   ) {
-    const userId = this.extractUserId(authHeader);
+    const userId = req.user.id;
     return this.usersService.updateProfile(userId, dto);
   }
 
   @Patch('change-password')
   @HttpCode(HttpStatus.OK)
   async changePassword(
-    @Headers('authorization') authHeader: string,
     @Req() req: any,
     @Body() dto: ChangePasswordDto,
   ) {
-    const userId = this.extractUserId(authHeader);
+    const userId = req.user.id;
     const ipAddress = req.ip || req.headers['x-forwarded-for']?.toString() || 'unknown';
     const userAgent = req.headers['user-agent'] || 'unknown';
     
     await this.usersService.changePassword(userId, dto, { ipAddress, userAgent });
     
-    // Note: Since all refresh sessions are revoked, the client should logically clear its refresh cookie,
-    // but the controller itself doesn't have `@Res()` here. If we want to clear it here:
     if (req.res) {
       req.res.clearCookie('refreshToken', {
         httpOnly: true,

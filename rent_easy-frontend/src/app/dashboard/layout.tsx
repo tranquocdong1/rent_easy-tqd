@@ -17,7 +17,6 @@ export default function DashboardLayout({
   const pathname = usePathname();
 
   useEffect(() => {
-    // Simple client-side protection
     if (!isAuthenticated) {
       router.push("/login");
     }

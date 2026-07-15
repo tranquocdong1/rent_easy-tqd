@@ -33,10 +33,19 @@ export class AuthController {
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
 
+    // Set Access Token as HttpOnly Cookie
+    // TODO: Implement CSRF protection (e.g. CSRF token or custom header) since we rely on cookies now
+    res.cookie('accessToken', result.accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      path: '/',
+      maxAge: 15 * 60 * 1000, // 15 minutes
+    });
+
     return {
       message: 'Login successful',
       data: {
-        accessToken: result.accessToken,
         expiresIn: result.expiresIn,
         user: result.user,
       },
@@ -71,10 +80,18 @@ export class AuthController {
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
+    // Set new Access Token
+    res.cookie('accessToken', result.accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      path: '/',
+      maxAge: 15 * 60 * 1000, // 15 minutes
+    });
+
     return {
       message: 'Token refreshed',
       data: {
-        accessToken: result.accessToken,
         expiresIn: result.expiresIn,
       },
     };
@@ -94,12 +111,19 @@ export class AuthController {
       await this.authService.logout(refreshToken, { ipAddress, userAgent });
     }
 
-    // Clear Cookie
+    // Clear Cookies
     res.clearCookie('refreshToken', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
       path: '/api/v1/auth',
+    });
+
+    res.clearCookie('accessToken', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      path: '/',
     });
 
     return {

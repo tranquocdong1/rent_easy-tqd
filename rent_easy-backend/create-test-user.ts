@@ -4,8 +4,8 @@ import * as argon2 from 'argon2';
 const prisma = new PrismaClient();
 
 async function main() {
-  const email = 'test@example.com';
-  const password = 'password123';
+  const email = 'test1@example.com';
+  const password = '12345678';
   
   const passwordHash = await argon2.hash(password);
   
