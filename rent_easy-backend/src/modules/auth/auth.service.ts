@@ -43,7 +43,7 @@ export class AuthService {
     }
 
     const sessionId = crypto.randomUUID();
-    const refreshTokenPayload = { sub: user.id, sid: sessionId };
+    const refreshTokenPayload = { sub: user.id, sid: sessionId, jti: crypto.randomUUID() };
     const refreshSecret = this.configService.get<string>('JWT_REFRESH_SECRET') || 'refreshSecret';
     
     const refreshToken = this.jwtService.sign(refreshTokenPayload, {
@@ -64,6 +64,7 @@ export class AuthService {
 
     await this.prisma.$transaction(async (tx) => {
       await this.refreshSessionService.createSession(tx, {
+        id: sessionId,
         userId: user.id,
         tokenHash: refreshTokenHash,
         expiresAt,
@@ -105,7 +106,9 @@ export class AuthService {
 
     const { sub: userId, sid: sessionId } = payload;
 
-    return this.prisma.$transaction(async (tx) => {
+    let reuseDetected = false;
+
+    const result = await this.prisma.$transaction(async (tx) => {
       const session = await this.refreshSessionService.findById(tx, sessionId);
       
       if (!session) {
@@ -133,11 +136,12 @@ export class AuthService {
             metadata: { sessionId, ...reqMeta } as any,
           }
         });
-        throw new UnauthorizedException({ message: 'Phát hiện sử dụng lại token.', code: 'TOKEN_REUSE_DETECTED' });
+        reuseDetected = true;
+        return null;
       }
       
       // Valid, rotate token
-      const newRefreshTokenPayload = { sub: userId, sid: sessionId };
+      const newRefreshTokenPayload = { sub: userId, sid: sessionId, jti: crypto.randomUUID() };
       const newRefreshToken = this.jwtService.sign(newRefreshTokenPayload, {
         secret: refreshSecret,
         expiresIn: '7d',
@@ -173,6 +177,12 @@ export class AuthService {
         refreshToken: newRefreshToken,
       };
     });
+
+    if (reuseDetected || !result) {
+      throw new UnauthorizedException({ message: 'Phát hiện sử dụng lại token.', code: 'TOKEN_REUSE_DETECTED' });
+    }
+
+    return result;
   }
 
   async logout(refreshToken: string, reqMeta: { ipAddress: string; userAgent: string }) {

@@ -6,6 +6,7 @@ export class RefreshSessionService {
   async createSession(
     tx: Prisma.TransactionClient,
     data: {
+      id?: string;
       userId: string;
       tokenHash: string;
       expiresAt: Date;
