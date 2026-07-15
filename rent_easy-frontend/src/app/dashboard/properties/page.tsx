@@ -6,6 +6,7 @@ import { Property, PropertyQuery, PaginatedResponse } from '@/types/property';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import Link from 'next/link';
 
 // Ensure standard HTML table styles via Tailwind
 function PropertiesPageContent() {
@@ -59,7 +60,9 @@ function PropertiesPageContent() {
     <div className="p-6 max-w-7xl mx-auto space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold tracking-tight">Danh sách Property</h1>
-        <Button>+ Thêm Mới</Button>
+        <Link href="/dashboard/properties/new" passHref>
+          <Button>+ Thêm Mới</Button>
+        </Link>
       </div>
 
       <div className="flex items-center space-x-4">

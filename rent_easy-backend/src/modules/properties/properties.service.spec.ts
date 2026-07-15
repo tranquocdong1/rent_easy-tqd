@@ -16,6 +16,12 @@ describe('PropertiesService', () => {
             property: {
               findMany: jest.fn(),
               count: jest.fn(),
+              findFirst: jest.fn(),
+              create: jest.fn(),
+            },
+            $transaction: jest.fn((callback) => callback(prisma)),
+            auditLog: {
+              create: jest.fn(),
             },
           },
         },
@@ -58,6 +64,44 @@ describe('PropertiesService', () => {
           take: 10,
         })
       );
+    });
+  });
+
+  describe('create', () => {
+    it('should create a property successfully', async () => {
+      const createDto = {
+        name: 'New Property',
+        propertyType: 'HOUSE' as any,
+        status: 'ACTIVE' as any,
+        address: '123 New St',
+      };
+
+      const newProperty = { ...createDto, id: '1', ownerId: 'owner-id', createdAt: new Date(), updatedAt: new Date(), description: null };
+
+      (prisma.property.findFirst as jest.Mock).mockResolvedValue(null);
+      (prisma.property.create as jest.Mock).mockResolvedValue(newProperty);
+      (prisma.auditLog.create as jest.Mock).mockResolvedValue({});
+
+      const result = await service.create('owner-id', createDto as any);
+
+      expect(result.message).toBe('Property created successfully');
+      expect(result.data.name).toBe('New Property');
+      expect(prisma.property.create).toHaveBeenCalled();
+      expect(prisma.auditLog.create).toHaveBeenCalled();
+    });
+
+    it('should throw ConflictException if property name already exists', async () => {
+      const createDto = {
+        name: 'Existing Property',
+        propertyType: 'HOUSE' as any,
+        status: 'ACTIVE' as any,
+        address: '123 Old St',
+      };
+
+      (prisma.property.findFirst as jest.Mock).mockResolvedValue({ id: '1', name: 'Existing Property' });
+
+      await expect(service.create('owner-id', createDto as any)).rejects.toThrow('Property đã tồn tại. Vui lòng chọn tên khác.');
+      expect(prisma.property.create).not.toHaveBeenCalled();
     });
   });
 });

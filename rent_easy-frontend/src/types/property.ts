@@ -36,3 +36,12 @@ export interface PropertyQuery {
   search?: string;
   status?: PropertyStatus;
 }
+
+export interface CreatePropertyPayload {
+  name: string;
+  propertyType: PropertyType;
+  status?: PropertyStatus;
+  address: string;
+  description?: string;
+}
+

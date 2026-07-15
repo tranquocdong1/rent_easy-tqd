@@ -1,7 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { ConflictException, Injectable } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { PropertyQueryDto } from './dto/property-query.dto';
-import { Prisma } from '@prisma/client';
+import { CreatePropertyDto } from './dto/create-property.dto';
+import { PropertyResponseDto } from './dto/property-response.dto';
+import { AuditAction, Prisma, PropertyStatus } from '@prisma/client';
 
 @Injectable()
 export class PropertiesService {
@@ -53,16 +55,7 @@ export class PropertiesService {
 
     const totalPages = Math.ceil(totalItems / take);
 
-    const formattedItems = items.map((item) => ({
-      id: item.id,
-      name: item.name,
-      propertyType: item.propertyType,
-      status: item.status,
-      address: item.address,
-      roomCount: 0, // Mock for now, will use _count.rooms later
-      createdAt: item.createdAt,
-      updatedAt: item.updatedAt,
-    }));
+    const formattedItems = items.map((item) => PropertyResponseDto.fromEntity(item, 0));
 
     return {
       data: {
@@ -77,5 +70,66 @@ export class PropertiesService {
       },
       message: 'Success',
     };
+  }
+
+  async create(ownerId: string, createPropertyDto: CreatePropertyDto) {
+    // Check if name already exists for this owner (not soft deleted)
+    const existingProperty = await this.prisma.property.findFirst({
+      where: {
+        ownerId,
+        name: createPropertyDto.name,
+        deletedAt: null,
+      },
+    });
+
+    if (existingProperty) {
+      throw new ConflictException({
+        message: 'Property đã tồn tại. Vui lòng chọn tên khác.',
+        code: 'PROPERTY_ALREADY_EXISTS',
+      });
+    }
+
+    try {
+      const property = await this.prisma.$transaction(async (tx) => {
+        const newProperty = await tx.property.create({
+          data: {
+            ...createPropertyDto,
+            status: createPropertyDto.status ?? PropertyStatus.ACTIVE,
+            ownerId,
+          },
+        });
+
+        await tx.auditLog.create({
+          data: {
+            userId: ownerId,
+            action: AuditAction.PROPERTY_CREATED,
+            entity: 'Property',
+            entityId: newProperty.id,
+            metadata: {
+              propertyId: newProperty.id,
+              propertyName: newProperty.name,
+            },
+          },
+        });
+
+        return newProperty;
+      });
+
+      return {
+        message: 'Property created successfully',
+        data: PropertyResponseDto.fromEntity(property, 0),
+      };
+    } catch (error) {
+      // Handle Prisma P2002 Unique Constraint violation just in case of race condition
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        if (error.code === 'P2002') {
+          throw new ConflictException({
+            message: 'Property đã tồn tại. Vui lòng chọn tên khác.',
+            code: 'PROPERTY_ALREADY_EXISTS',
+          });
+        }
+      }
+      throw error;
+    }
   }
 }

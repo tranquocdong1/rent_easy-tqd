@@ -1,6 +1,7 @@
-import { Controller, Get, Query, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query, UseGuards, Request } from '@nestjs/common';
 import { PropertiesService } from './properties.service';
 import { PropertyQueryDto } from './dto/property-query.dto';
+import { CreatePropertyDto } from './dto/create-property.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @Controller('v1/properties')
@@ -12,5 +13,11 @@ export class PropertiesController {
   findAll(@Request() req, @Query() query: PropertyQueryDto) {
     const ownerId = req.user.id;
     return this.propertiesService.findAll(ownerId, query);
+  }
+
+  @Post()
+  create(@Request() req, @Body() createPropertyDto: CreatePropertyDto) {
+    const ownerId = req.user.id;
+    return this.propertiesService.create(ownerId, createPropertyDto);
   }
 }
