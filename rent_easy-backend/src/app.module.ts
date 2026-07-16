@@ -8,6 +8,7 @@ import { AuditModule } from './modules/audit/audit.module';
 import { UsersModule } from './modules/users/users.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { PropertiesModule } from './modules/properties/properties.module';
+import { RoomsModule } from './modules/rooms/rooms.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { PropertiesModule } from './modules/properties/properties.module';
     UsersModule,
     AuthModule,
     PropertiesModule,
+    RoomsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

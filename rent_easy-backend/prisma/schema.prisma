@@ -37,6 +37,9 @@ enum AuditAction {
   PROPERTY_CREATED
   PROPERTY_UPDATED
   PROPERTY_DELETED
+  ROOM_CREATED
+  ROOM_UPDATED
+  ROOM_DELETED
 }
 
 enum RefreshSessionRevokeReason {
@@ -106,8 +109,40 @@ model Property {
   deletedAt    DateTime?
 
   owner        User           @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  rooms        Room[]
 
   @@index([ownerId])
   @@index([ownerId, status])
   @@index([ownerId, createdAt])
+}
+
+enum RoomStatus {
+  AVAILABLE
+  OCCUPIED
+  MAINTENANCE
+  INACTIVE
+}
+
+model Room {
+  id          String     @id @default(uuid())
+  propertyId  String
+  code        String     @db.VarChar(50)
+  name        String     @db.VarChar(150)
+  floor       Int?
+  area        Decimal    @db.Decimal(8, 2)
+  capacity    Int
+  rentPrice   Decimal    @db.Decimal(12, 2)
+  deposit     Decimal    @db.Decimal(12, 2)
+  status      RoomStatus
+  description String?    @db.Text
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  deletedAt   DateTime?
+
+  property    Property   @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@index([propertyId])
+  @@index([propertyId, status])
+  @@index([propertyId, createdAt])
+  @@index([propertyId, code])
 }
