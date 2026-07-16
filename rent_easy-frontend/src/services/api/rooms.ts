@@ -1,6 +1,6 @@
 import axiosInstance from '@/lib/axios';
 import { PaginatedResponse } from '@/types/property';
-import { Room, RoomQuery, RoomStatus } from '@/types/room';
+import { Room, RoomQuery, RoomStatus, RoomStatistics } from '@/types/room';
 
 export interface CreateRoomPayload {
   code: string;
@@ -32,8 +32,16 @@ export const roomsApi = {
     const response = await axiosInstance.get(`/v1/rooms/${id}`);
     return response.data;
   },
+  getStatistics: async (id: string): Promise<{ message: string; data: RoomStatistics }> => {
+    const response = await axiosInstance.get(`/v1/rooms/${id}/statistics`);
+    return response.data;
+  },
   update: async (id: string, payload: UpdateRoomPayload): Promise<{ message: string; data: Room }> => {
     const response = await axiosInstance.patch(`/v1/rooms/${id}`, payload);
+    return response.data;
+  },
+  remove: async (id: string): Promise<{ message: string; data: null }> => {
+    const response = await axiosInstance.delete(`/v1/rooms/${id}`);
     return response.data;
   },
 };

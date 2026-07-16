@@ -1,4 +1,4 @@
-import { Controller, Get, Body, Param, Patch, UseGuards, ValidationPipe, ParseUUIDPipe } from '@nestjs/common';
+import { Controller, Get, Body, Param, Patch, Delete, UseGuards, ValidationPipe, ParseUUIDPipe } from '@nestjs/common';
 import { RoomsService } from './rooms.service';
 import { UpdateRoomDto } from './dto/update-room.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -21,6 +21,15 @@ export class RoomIndividualController {
     return this.roomsService.findOne(ownerId, id);
   }
 
+  @Get(':id/statistics')
+  @Roles(Role.OWNER)
+  getStatistics(
+    @CurrentUser('id') ownerId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.roomsService.getStatistics(ownerId, id);
+  }
+
   @Patch(':id')
   @Roles(Role.OWNER)
   update(
@@ -29,5 +38,14 @@ export class RoomIndividualController {
     @Body(new ValidationPipe({ transform: true, whitelist: true })) updateRoomDto: UpdateRoomDto,
   ) {
     return this.roomsService.update(ownerId, id, updateRoomDto);
+  }
+
+  @Delete(':id')
+  @Roles(Role.OWNER)
+  remove(
+    @CurrentUser('id') ownerId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.roomsService.remove(ownerId, id);
   }
 }

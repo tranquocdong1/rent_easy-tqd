@@ -5,10 +5,16 @@ import { CreateRoomDto } from './dto/create-room.dto';
 import { UpdateRoomDto } from './dto/update-room.dto';
 import { RoomResponseDto } from './dto/room-response.dto';
 import { Prisma, AuditAction, RoomStatus } from '@prisma/client';
+import { RoomUsageChecker } from './policies/room-usage-checker';
+import { RoomStatisticsProvider } from './providers/room-statistics.provider';
 
 @Injectable()
 export class RoomsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly roomUsageChecker: RoomUsageChecker,
+    private readonly roomStatisticsProvider: RoomStatisticsProvider,
+  ) {}
 
   /**
    * Validates if property exists, belongs to owner, and is not deleted.
@@ -238,6 +244,34 @@ export class RoomsService {
     };
   }
 
+  async getStatistics(ownerId: string, id: string) {
+    // 1. Verify existence and ownership
+    const room = await this.prisma.room.findFirst({
+      where: {
+        id,
+        deletedAt: null,
+      },
+      include: {
+        property: true,
+      },
+    });
+
+    if (!room || room.property.ownerId !== ownerId) {
+      throw new NotFoundException({
+        message: 'Không tìm thấy phòng.',
+        code: 'ROOM_NOT_FOUND',
+      });
+    }
+
+    // 2. Fetch stats
+    const stats = await this.roomStatisticsProvider.getRoomStats(id);
+
+    return {
+      message: 'Success',
+      data: stats,
+    };
+  }
+
   async update(ownerId: string, id: string, updateRoomDto: UpdateRoomDto) {
     if (Object.keys(updateRoomDto).length === 0) {
       throw new BadRequestException({
@@ -334,5 +368,61 @@ export class RoomsService {
       }
       throw error;
     }
+  }
+
+  async remove(ownerId: string, id: string) {
+    // 1. Validate room existence
+    const existingRoom = await this.prisma.room.findFirst({
+      where: {
+        id,
+        deletedAt: null,
+      },
+    });
+
+    if (!existingRoom) {
+      throw new NotFoundException({
+        message: 'Không tìm thấy phòng.',
+        code: 'ROOM_NOT_FOUND',
+      });
+    }
+
+    // 2. Validate property ownership
+    await this.validatePropertyOwnership(ownerId, existingRoom.propertyId);
+
+    // 3. Check usage constraints via policy
+    const canDelete = await this.roomUsageChecker.canDeleteRoom(id);
+    if (!canDelete) {
+      throw new ConflictException({
+        message: 'Phòng đang được sử dụng (có Hợp đồng hoặc Người thuê), không thể xóa.',
+        code: 'ROOM_IN_USE',
+      });
+    }
+
+    // 4. Soft Delete in Transaction
+    await this.prisma.$transaction(async (tx) => {
+      await tx.room.update({
+        where: { id },
+        data: { deletedAt: new Date() },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          userId: ownerId,
+          action: AuditAction.ROOM_DELETED,
+          entity: 'Room',
+          entityId: id,
+          metadata: {
+            roomId: id,
+            roomCode: existingRoom.code,
+            propertyId: existingRoom.propertyId,
+          },
+        },
+      });
+    });
+
+    return {
+      message: 'Room deleted successfully',
+      data: null,
+    };
   }
 }

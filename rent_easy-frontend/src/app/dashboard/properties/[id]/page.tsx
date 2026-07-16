@@ -78,7 +78,7 @@ export default function PropertyDetailPage() {
                 <p className="text-sm text-muted-foreground">Trạng thái</p>
                 <p>
                   <span className={`px-2 py-1 rounded-full text-xs font-medium ${property.status === 'ACTIVE' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}`}>
-                    {property.status}
+                    {property.status === 'ACTIVE' ? 'Đang hoạt động' : property.status === 'INACTIVE' ? 'Ngừng hoạt động' : property.status}
                   </span>
                 </p>
               </div>

@@ -112,8 +112,8 @@ function PropertiesPageContent() {
             onChange={(e) => setQuery(prev => ({ ...prev, status: e.target.value as any || undefined, page: 1 }))}
           >
             <option value="">Tất cả trạng thái</option>
-            <option value="ACTIVE">ACTIVE</option>
-            <option value="INACTIVE">INACTIVE</option>
+            <option value="ACTIVE">Đang hoạt động</option>
+            <option value="INACTIVE">Ngừng hoạt động</option>
           </select>
         </div>
       </div>
@@ -158,12 +158,15 @@ function PropertiesPageContent() {
                   <td className="px-4 py-3">{property.propertyType}</td>
                   <td className="px-4 py-3">
                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${property.status === 'ACTIVE' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}`}>
-                      {property.status}
+                      {property.status === 'ACTIVE' ? 'Đang hoạt động' : property.status === 'INACTIVE' ? 'Ngừng hoạt động' : property.status}
                     </span>
                   </td>
                   <td className="px-4 py-3">{property.roomCount}</td>
                   <td className="px-4 py-3">{new Date(property.updatedAt).toLocaleDateString('vi-VN')}</td>
                   <td className="px-4 py-3 text-right space-x-4">
+                    <Link href={`/dashboard/properties/${property.id}/rooms`} className="text-green-600 hover:underline">
+                      Phòng
+                    </Link>
                     <Link href={`/dashboard/properties/${property.id}/edit`} className="text-blue-600 hover:underline">
                       Sửa
                     </Link>

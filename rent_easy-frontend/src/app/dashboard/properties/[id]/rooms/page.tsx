@@ -8,6 +8,16 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import Link from 'next/link';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 export default function RoomsPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
@@ -23,6 +33,10 @@ export default function RoomsPage({ params }: { params: Promise<{ id: string }> 
     search: '',
     status: undefined,
   });
+
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const fetchRooms = useCallback(async () => {
     try {
@@ -52,6 +66,25 @@ export default function RoomsPage({ params }: { params: Promise<{ id: string }> 
       sortOrder: prev.sortBy === field && prev.sortOrder === 'asc' ? 'desc' : 'asc',
       page: 1,
     }));
+  };
+
+  const handleDelete = async () => {
+    if (!deleteId) return;
+    try {
+      setIsDeleting(true);
+      setDeleteError(null);
+      await roomsApi.remove(deleteId);
+      setDeleteId(null);
+      fetchRooms();
+    } catch (error: any) {
+      if (error.response?.data?.code === 'ROOM_IN_USE') {
+        setDeleteError('Phòng đang được sử dụng, không thể xóa.');
+      } else {
+        setDeleteError('Đã có lỗi xảy ra. Vui lòng thử lại.');
+      }
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   return (
@@ -137,15 +170,21 @@ export default function RoomsPage({ params }: { params: Promise<{ id: string }> 
                         room.status === 'MAINTENANCE' ? 'bg-orange-100 text-orange-800' :
                         'bg-gray-100 text-gray-800'
                       }`}>
-                        {room.status}
+                        {room.status === 'AVAILABLE' ? 'Phòng trống' :
+                         room.status === 'OCCUPIED' ? 'Đang cho thuê' :
+                         room.status === 'MAINTENANCE' ? 'Bảo trì' :
+                         room.status === 'INACTIVE' ? 'Ngừng hoạt động' : room.status}
                       </span>
                     </td>
                     <td className="p-3 text-right space-x-2">
                       <Button variant="ghost" size="sm" asChild>
-                        <Link href={`/dashboard/properties/${propertyId}/rooms/${room.id}`}>Chi tiết</Link>
+                        <Link href={`/dashboard/rooms/${room.id}`}>Chi tiết</Link>
                       </Button>
                       <Button variant="outline" size="sm" asChild>
                         <Link href={`/dashboard/rooms/${room.id}/edit`}>Sửa</Link>
+                      </Button>
+                      <Button variant="destructive" size="sm" onClick={() => setDeleteId(room.id)}>
+                        Xóa
                       </Button>
                     </td>
                   </tr>
@@ -185,6 +224,35 @@ export default function RoomsPage({ params }: { params: Promise<{ id: string }> 
           </div>
         )}
       </div>
+
+      <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Bạn có chắc chắn muốn xóa phòng này?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Hành động này sẽ xóa phòng khỏi danh sách. Bạn chỉ có thể xóa phòng chưa có hợp đồng hoặc người thuê.
+              {deleteError && (
+                <div className="mt-2 text-red-500 font-medium">
+                  {deleteError}
+                </div>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Hủy</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+              onClick={(e) => {
+                e.preventDefault();
+                handleDelete();
+              }}
+              disabled={isDeleting}
+            >
+              {isDeleting ? 'Đang xóa...' : 'Xóa phòng'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

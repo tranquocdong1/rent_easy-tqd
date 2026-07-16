@@ -1,8 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { RoomsService } from './rooms.service';
-import { PrismaService } from '../../common/prisma/prisma.service';
 import { NotFoundException } from '@nestjs/common';
 import { RoomStatus } from '@prisma/client';
+import { RoomUsageChecker } from './policies/room-usage-checker';
+import { RoomStatisticsProvider } from './providers/room-statistics.provider';
+import { PrismaService } from '../../common/prisma/prisma.service';
 
 describe('RoomsService', () => {
   let service: RoomsService;
@@ -27,6 +29,11 @@ describe('RoomsService', () => {
       providers: [
         RoomsService,
         { provide: PrismaService, useValue: mockPrismaService },
+        { provide: RoomUsageChecker, useValue: { canDeleteRoom: jest.fn().mockResolvedValue(true) } },
+        {
+          provide: RoomStatisticsProvider,
+          useValue: { getRoomStats: jest.fn().mockResolvedValue({ activeContracts: 0, currentTenants: 0, unpaidInvoices: 0 }) },
+        },
       ],
     }).compile();
 
@@ -137,6 +144,31 @@ describe('RoomsService', () => {
       await expect(
         service.update('owner-id', 'room-id', { name: 'Old Name' })
       ).rejects.toThrow('Không có thay đổi nào so với dữ liệu hiện tại.');
+    });
+  });
+
+  describe('remove', () => {
+    it('should throw NotFoundException if room not found', async () => {
+      mockPrismaService.room.findFirst.mockResolvedValue(null);
+
+      await expect(service.remove('owner-id', 'room-id')).rejects.toThrow(
+        'Không tìm thấy phòng.'
+      );
+    });
+
+    it('should throw ConflictException if room is in use', async () => {
+      mockPrismaService.room.findFirst.mockResolvedValue({
+        id: 'room-id',
+        propertyId: 'property-id',
+      });
+      mockPrismaService.property.findFirst.mockResolvedValue({ id: 'property-id' });
+      
+      // Override the checker for this test
+      jest.spyOn((service as any).roomUsageChecker, 'canDeleteRoom').mockResolvedValue(false);
+
+      await expect(service.remove('owner-id', 'room-id')).rejects.toThrow(
+        'Phòng đang được sử dụng (có Hợp đồng hoặc Người thuê), không thể xóa.'
+      );
     });
   });
 });

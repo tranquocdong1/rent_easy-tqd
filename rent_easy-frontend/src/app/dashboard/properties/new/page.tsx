@@ -109,8 +109,8 @@ export default function NewPropertyPage() {
                   {...register('status')}
                   className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
                 >
-                  <option value="ACTIVE">ACTIVE</option>
-                  <option value="INACTIVE">INACTIVE</option>
+                  <option value="ACTIVE">Đang hoạt động</option>
+                  <option value="INACTIVE">Ngừng hoạt động</option>
                 </select>
                 {errors.status && <p className="text-sm text-red-500">{errors.status.message}</p>}
               </div>
