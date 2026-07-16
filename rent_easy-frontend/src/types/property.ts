@@ -10,6 +10,17 @@ export interface Property {
   roomCount: number;
   createdAt: string;
   updatedAt: string;
+  description?: string | null;
+}
+
+export interface PropertyStatistics {
+  totalRooms: number;
+  availableRooms: number;
+  occupiedRooms: number;
+}
+
+export interface PropertyDetail extends Property {
+  statistics: PropertyStatistics;
 }
 
 export interface PaginationMeta {

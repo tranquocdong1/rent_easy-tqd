@@ -4,11 +4,16 @@ import { PropertyQueryDto } from './dto/property-query.dto';
 import { CreatePropertyDto } from './dto/create-property.dto';
 import { UpdatePropertyDto } from './dto/update-property.dto';
 import { PropertyResponseDto } from './dto/property-response.dto';
+import { PropertyDetailResponseDto } from './dto/property-detail-response.dto';
 import { AuditAction, Prisma, PropertyStatus } from '@prisma/client';
+import { PropertyStatisticsService } from './property-statistics.service';
 
 @Injectable()
 export class PropertiesService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly statisticsService: PropertyStatisticsService,
+  ) {}
 
   async findAll(ownerId: string, query: PropertyQueryDto) {
     const {
@@ -150,9 +155,11 @@ export class PropertiesService {
       });
     }
 
+    const statistics = await this.statisticsService.getStatistics(id);
+
     return {
       message: 'Success',
-      data: PropertyResponseDto.fromEntity(property, 0),
+      data: PropertyDetailResponseDto.fromEntityWithStats(property, 0, statistics),
     };
   }
 

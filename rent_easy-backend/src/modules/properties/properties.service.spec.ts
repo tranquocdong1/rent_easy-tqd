@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { PropertiesService } from './properties.service';
 import { PrismaService } from '../../common/prisma/prisma.service';
+import { PropertyStatisticsService } from './property-statistics.service';
 
 describe('PropertiesService', () => {
   let service: PropertiesService;
@@ -18,11 +19,18 @@ describe('PropertiesService', () => {
               count: jest.fn(),
               findFirst: jest.fn(),
               create: jest.fn(),
+              update: jest.fn(),
             },
             $transaction: jest.fn((callback) => callback(prisma)),
             auditLog: {
               create: jest.fn(),
             },
+          },
+        },
+        {
+          provide: PropertyStatisticsService,
+          useValue: {
+            getStatistics: jest.fn().mockResolvedValue({ totalRooms: 0, availableRooms: 0, occupiedRooms: 0 }),
           },
         },
       ],
@@ -106,12 +114,14 @@ describe('PropertiesService', () => {
   });
 
   describe('findOne', () => {
-    it('should return a property successfully', async () => {
+    it('should return a property successfully with stats', async () => {
       const mockProperty = { id: '1', name: 'Prop', ownerId: 'owner-id' };
       (prisma.property.findFirst as jest.Mock).mockResolvedValue(mockProperty);
 
       const result = await service.findOne('owner-id', '1');
       expect(result.data.name).toBe('Prop');
+      expect(result.data.statistics).toBeDefined();
+      expect(result.data.statistics.totalRooms).toBe(0);
     });
 
     it('should throw NotFoundException if property does not exist', async () => {

@@ -1,5 +1,5 @@
 import axiosInstance from '@/lib/axios';
-import { PaginatedResponse, Property, PropertyQuery, CreatePropertyPayload, UpdatePropertyPayload } from '@/types/property';
+import { PaginatedResponse, Property, PropertyDetail, PropertyQuery, CreatePropertyPayload, UpdatePropertyPayload } from '@/types/property';
 
 export const propertiesApi = {
   getAll: async (query?: PropertyQuery): Promise<PaginatedResponse<Property>> => {
@@ -10,7 +10,7 @@ export const propertiesApi = {
     const response = await axiosInstance.post('/v1/properties', payload);
     return response.data;
   },
-  getById: async (id: string): Promise<{ message: string; data: Property }> => {
+  getById: async (id: string): Promise<{ message: string; data: PropertyDetail }> => {
     const response = await axiosInstance.get(`/v1/properties/${id}`);
     return response.data;
   },

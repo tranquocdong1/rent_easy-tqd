@@ -150,7 +150,11 @@ function PropertiesPageContent() {
             ) : (
               data?.data?.items.map((property) => (
                 <tr key={property.id} className="border-b last:border-0 hover:bg-muted/50">
-                  <td className="px-4 py-3 font-medium">{property.name}</td>
+                  <td className="px-4 py-3 font-medium">
+                    <Link href={`/dashboard/properties/${property.id}`} className="hover:underline text-primary">
+                      {property.name}
+                    </Link>
+                  </td>
                   <td className="px-4 py-3">{property.propertyType}</td>
                   <td className="px-4 py-3">
                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${property.status === 'ACTIVE' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}`}>
