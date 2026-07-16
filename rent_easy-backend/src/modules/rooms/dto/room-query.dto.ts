@@ -1,4 +1,4 @@
-import { IsEnum, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
+import { IsEnum, IsInt, IsOptional, IsString, Max, Min, IsIn } from 'class-validator';
 import { Type } from 'class-transformer';
 import { RoomStatus } from '@prisma/client';
 
@@ -29,6 +29,6 @@ export class RoomQueryDto {
   sortBy?: string = 'createdAt';
 
   @IsOptional()
-  @IsEnum(['asc', 'desc'])
+  @IsIn(['asc', 'desc'])
   sortOrder?: 'asc' | 'desc' = 'desc';
 }

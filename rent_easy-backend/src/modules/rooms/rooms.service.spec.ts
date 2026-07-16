@@ -18,6 +18,7 @@ describe('RoomsService', () => {
       findFirst: jest.fn(),
       count: jest.fn(),
       create: jest.fn(),
+      update: jest.fn(),
     },
   };
 
@@ -107,6 +108,35 @@ describe('RoomsService', () => {
           deposit: 3000,
         })
       ).rejects.toThrow('Mã phòng đã tồn tại trong tài sản này.');
+    });
+  });
+
+  describe('update', () => {
+    it('should throw BadRequestException if update body is empty', async () => {
+      await expect(service.update('owner-id', 'room-id', {})).rejects.toThrow(
+        'Không có dữ liệu để cập nhật.'
+      );
+    });
+
+    it('should throw NotFoundException if room not found', async () => {
+      mockPrismaService.room.findFirst.mockResolvedValue(null);
+
+      await expect(
+        service.update('owner-id', 'room-id', { name: 'New Name' })
+      ).rejects.toThrow('Không tìm thấy phòng.');
+    });
+
+    it('should throw BadRequestException if no fields are actually changed', async () => {
+      mockPrismaService.room.findFirst.mockResolvedValue({
+        id: 'room-id',
+        propertyId: 'property-id',
+        name: 'Old Name',
+      });
+      mockPrismaService.property.findFirst.mockResolvedValue({ id: 'property-id' }); // property ownership OK
+
+      await expect(
+        service.update('owner-id', 'room-id', { name: 'Old Name' })
+      ).rejects.toThrow('Không có thay đổi nào so với dữ liệu hiện tại.');
     });
   });
 });

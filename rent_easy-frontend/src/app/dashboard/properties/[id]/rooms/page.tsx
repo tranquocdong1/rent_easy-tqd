@@ -140,9 +140,12 @@ export default function RoomsPage({ params }: { params: Promise<{ id: string }> 
                         {room.status}
                       </span>
                     </td>
-                    <td className="p-3 text-right">
+                    <td className="p-3 text-right space-x-2">
                       <Button variant="ghost" size="sm" asChild>
                         <Link href={`/dashboard/properties/${propertyId}/rooms/${room.id}`}>Chi tiết</Link>
+                      </Button>
+                      <Button variant="outline" size="sm" asChild>
+                        <Link href={`/dashboard/rooms/${room.id}/edit`}>Sửa</Link>
                       </Button>
                     </td>
                   </tr>

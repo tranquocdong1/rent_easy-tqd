@@ -2,6 +2,8 @@
 
 import { useAuthStore } from "@/lib/auth-store";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
 
 export default function DashboardPage() {
   const { user } = useAuthStore();
@@ -20,8 +22,23 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             <p className="text-sm text-slate-600">
-              Đây là trang dashboard của bạn. Hiện tại hệ thống đang được phát triển, các tính năng quản lý nhà trọ sẽ sớm được cập nhật tại đây.
+              Đây là trang dashboard của bạn. Hãy bắt đầu bằng việc quản lý các bất động sản của bạn.
             </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Quản lý Properties</CardTitle>
+            <CardDescription>Xem và quản lý danh sách nhà trọ</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-slate-600 mb-4">
+              Thêm mới, chỉnh sửa thông tin nhà trọ, và quản lý các phòng (rooms) bên trong mỗi nhà trọ.
+            </p>
+            <Button asChild>
+              <Link href="/dashboard/properties">Đi tới Properties & Rooms</Link>
+            </Button>
           </CardContent>
         </Card>
       </div>

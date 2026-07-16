@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, BadRequestException, ConflictException }
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { RoomQueryDto } from './dto/room-query.dto';
 import { CreateRoomDto } from './dto/create-room.dto';
+import { UpdateRoomDto } from './dto/update-room.dto';
 import { RoomResponseDto } from './dto/room-response.dto';
 import { Prisma, AuditAction, RoomStatus } from '@prisma/client';
 
@@ -36,7 +37,7 @@ export class RoomsService {
    * Normalize room data before creating/updating.
    * Uniformly upper cases code and handles description.
    */
-  normalizeRoomData(data: Partial<CreateRoomDto>) {
+  normalizeRoomData(data: Partial<CreateRoomDto> | UpdateRoomDto) {
     const normalized = { ...data };
     
     if (normalized.code) {
@@ -200,6 +201,128 @@ export class RoomsService {
 
       return {
         message: 'Room created successfully',
+        data: RoomResponseDto.fromEntity(room),
+      };
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        throw new ConflictException({
+          message: 'Mã phòng đã tồn tại trong tài sản này.',
+          code: 'ROOM_ALREADY_EXISTS',
+        });
+      }
+      throw error;
+    }
+  }
+
+  async findOne(ownerId: string, id: string) {
+    const room = await this.prisma.room.findFirst({
+      where: {
+        id,
+        deletedAt: null,
+      },
+      include: {
+        property: true,
+      }
+    });
+
+    if (!room || room.property.ownerId !== ownerId) {
+      throw new NotFoundException({
+        message: 'Không tìm thấy phòng.',
+        code: 'ROOM_NOT_FOUND',
+      });
+    }
+
+    return {
+      message: 'Success',
+      data: RoomResponseDto.fromEntity(room),
+    };
+  }
+
+  async update(ownerId: string, id: string, updateRoomDto: UpdateRoomDto) {
+    if (Object.keys(updateRoomDto).length === 0) {
+      throw new BadRequestException({
+        message: 'Không có dữ liệu để cập nhật.',
+        code: 'NO_FIELDS_TO_UPDATE',
+      });
+    }
+
+    // 1. Validate room existence
+    const existingRoom = await this.prisma.room.findFirst({
+      where: {
+        id,
+        deletedAt: null,
+      },
+    });
+
+    if (!existingRoom) {
+      throw new NotFoundException({
+        message: 'Không tìm thấy phòng.',
+        code: 'ROOM_NOT_FOUND',
+      });
+    }
+
+    // 2. Validate property ownership
+    await this.validatePropertyOwnership(ownerId, existingRoom.propertyId);
+
+    // 3. Normalize new data
+    const normalizedData = this.normalizeRoomData(updateRoomDto) as UpdateRoomDto;
+
+    // 4. Filter only changed fields
+    const changedFields: any = {};
+    for (const key of Object.keys(normalizedData)) {
+      if ((normalizedData as any)[key] !== (existingRoom as any)[key]) {
+        changedFields[key] = (normalizedData as any)[key];
+      }
+    }
+
+    if (Object.keys(changedFields).length === 0) {
+      throw new BadRequestException({
+        message: 'Không có thay đổi nào so với dữ liệu hiện tại.',
+        code: 'NO_FIELDS_TO_UPDATE',
+      });
+    }
+
+    // 5. Validate duplicate code if code changed
+    if (changedFields.code) {
+      await this.validateDuplicateCode(existingRoom.propertyId, changedFields.code, id);
+    }
+
+    try {
+      // 6. Transaction
+      const room = await this.prisma.$transaction(async (tx) => {
+        const updatedRoom = await tx.room.update({
+          where: { id },
+          data: changedFields,
+        });
+
+        // Compute before/after for audit (only changed fields)
+        const before: any = {};
+        const after: any = {};
+        for (const key of Object.keys(changedFields)) {
+          before[key] = (existingRoom as any)[key];
+          after[key] = (updatedRoom as any)[key];
+        }
+
+        await tx.auditLog.create({
+          data: {
+            userId: ownerId,
+            action: AuditAction.ROOM_UPDATED,
+            entity: 'Room',
+            entityId: id,
+            metadata: {
+              roomId: id,
+              roomCode: updatedRoom.code,
+              propertyId: existingRoom.propertyId,
+              changes: { before, after },
+            },
+          },
+        });
+
+        return updatedRoom;
+      });
+
+      return {
+        message: 'Room updated successfully',
         data: RoomResponseDto.fromEntity(room),
       };
     } catch (error) {
