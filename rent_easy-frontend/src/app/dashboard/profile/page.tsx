@@ -29,7 +29,7 @@ type ProfileFormValues = z.infer<typeof profileSchema>;
 type PasswordFormValues = z.infer<typeof passwordSchema>;
 
 export default function ProfilePage() {
-  const { user, setAuth, accessToken, clearAuth } = useAuthStore();
+  const { user, setAuth, clearAuth } = useAuthStore();
   const router = useRouter();
   
   const [profileMessage, setProfileMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
@@ -62,8 +62,8 @@ export default function ProfilePage() {
       setProfileMessage({ type: 'success', text: 'Cập nhật thông tin thành công!' });
       
       // Update local store
-      if (accessToken && user) {
-        setAuth(accessToken, { ...user, fullName: res.data.fullName });
+      if (user) {
+        setAuth({ ...user, fullName: res.data.fullName });
       }
     } catch (err: any) {
       setProfileMessage({ type: 'error', text: err.response?.data?.message || 'Có lỗi xảy ra' });

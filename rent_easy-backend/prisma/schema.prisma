@@ -20,9 +20,10 @@ model User {
   role         Role       @default(OWNER)
   isActive     Boolean    @default(true)
   createdAt    DateTime   @default(now())
-  updatedAt      DateTime         @updatedAt
+  updatedAt       DateTime         @updatedAt
   refreshSessions RefreshSession[]
   properties      Property[]
+  tenants         Tenant[]
 
   @@index([email])
 }
@@ -40,6 +41,9 @@ enum AuditAction {
   ROOM_CREATED
   ROOM_UPDATED
   ROOM_DELETED
+  TENANT_CREATED
+  TENANT_UPDATED
+  TENANT_DELETED
 }
 
 enum RefreshSessionRevokeReason {
@@ -145,4 +149,36 @@ model Room {
   @@index([propertyId, status])
   @@index([propertyId, createdAt])
   @@index([propertyId, code])
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+model Tenant {
+  id                  String    @id @default(uuid())
+  ownerId             String
+  fullName            String    @db.VarChar(150)
+  gender              Gender?
+  dateOfBirth         DateTime?
+  identityNumber      String    @db.VarChar(50)
+  identityIssuedDate  DateTime?
+  identityIssuedPlace String?   @db.VarChar(255)
+  phone               String?   @db.VarChar(20)
+  email               String?   @db.VarChar(255)
+  permanentAddress    String?   @db.Text
+  note                String?   @db.Text
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  deletedAt           DateTime?
+
+  owner               User      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  @@index([ownerId])
+  @@index([ownerId, fullName])
+  @@index([ownerId, phone])
+  @@index([ownerId, identityNumber])
+  @@index([ownerId, createdAt])
 }
