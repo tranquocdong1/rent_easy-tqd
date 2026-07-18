@@ -6,6 +6,8 @@ import { Tenant, TenantQuery } from "@/types/tenant";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
+import Link from "next/link";
+
 export default function TenantsPage() {
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [loading, setLoading] = useState(true);
@@ -40,7 +42,9 @@ export default function TenantsPage() {
     <div className="container mx-auto py-8 px-4">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Danh sách người thuê</h1>
-        <Button>Thêm người thuê (Tính năng 2)</Button>
+        <Link href="/dashboard/tenants/new">
+          <Button>Thêm người thuê</Button>
+        </Link>
       </div>
 
       <div className="flex items-center mb-4">

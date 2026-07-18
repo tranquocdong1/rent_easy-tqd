@@ -1,6 +1,19 @@
 import axiosInstance from '@/lib/axios';
 import { PaginatedResponse } from '@/types/property';
-import { Tenant, TenantQuery } from '@/types/tenant';
+import { Tenant, TenantQuery, Gender } from '@/types/tenant';
+
+export interface CreateTenantPayload {
+  fullName: string;
+  gender?: Gender | null;
+  dateOfBirth?: string | null;
+  identityNumber: string;
+  identityIssuedDate?: string | null;
+  identityIssuedPlace?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  permanentAddress?: string | null;
+  note?: string | null;
+}
 
 export const tenantsApi = {
   getAll: async (query?: TenantQuery): Promise<PaginatedResponse<Tenant>> => {
@@ -10,4 +23,8 @@ export const tenantsApi = {
     const response = await axiosInstance.get(`/v1/tenants`, { params });
     return response.data;
   },
+  create: async (payload: CreateTenantPayload): Promise<{ message: string; data: Tenant }> => {
+    const response = await axiosInstance.post(`/v1/tenants`, payload);
+    return response.data;
+  }
 };

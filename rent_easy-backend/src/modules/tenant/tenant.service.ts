@@ -1,7 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { GetTenantsQueryDto, SortOrder, TenantSortBy } from './dto/get-tenants.dto';
-import { Prisma } from '@prisma/client';
+import { CreateTenantDto } from './dto/create-tenant.dto';
+import { Prisma, AuditAction } from '@prisma/client';
 
 @Injectable()
 export class TenantService {
@@ -74,5 +75,59 @@ export class TenantService {
         currentPage: page,
       },
     };
+  }
+
+  async createTenant(ownerId: string, dto: CreateTenantDto) {
+    const existing = await this.prisma.tenant.findFirst({
+      where: {
+        ownerId,
+        identityNumber: dto.identityNumber,
+        deletedAt: null,
+      },
+    });
+
+    if (existing) {
+      throw new ConflictException('IDENTITY_NUMBER_ALREADY_EXISTS');
+    }
+
+    try {
+      const result = await this.prisma.$transaction(async (tx) => {
+        const tenant = await tx.tenant.create({
+          data: {
+            ownerId,
+            ...dto,
+            dateOfBirth: dto.dateOfBirth ? new Date(dto.dateOfBirth) : null,
+            identityIssuedDate: dto.identityIssuedDate ? new Date(dto.identityIssuedDate) : null,
+          },
+        });
+
+        await tx.auditLog.create({
+          data: {
+            userId: ownerId,
+            action: AuditAction.TENANT_CREATED,
+            entity: 'Tenant',
+            entityId: tenant.id,
+            metadata: {
+              tenantId: tenant.id,
+              tenantName: tenant.fullName,
+              identityNumber: tenant.identityNumber,
+            },
+          },
+        });
+
+        return tenant;
+      });
+
+      // Omit ownerId before returning
+      const { ownerId: _, ...tenantData } = result;
+      return tenantData;
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        if (error.code === 'P2002') {
+          throw new ConflictException('IDENTITY_NUMBER_ALREADY_EXISTS');
+        }
+      }
+      throw error;
+    }
   }
 }
