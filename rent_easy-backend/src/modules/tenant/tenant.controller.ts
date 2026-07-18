@@ -1,7 +1,8 @@
-import { Controller, Get, Post, Body, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Param, Body, Query, UseGuards } from '@nestjs/common';
 import { TenantService } from './tenant.service';
 import { GetTenantsQueryDto } from './dto/get-tenants.dto';
 import { CreateTenantDto } from './dto/create-tenant.dto';
+import { UpdateTenantDto } from './dto/update-tenant.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -35,6 +36,33 @@ export class TenantController {
     const data = await this.tenantService.createTenant(user.id, dto);
     return {
       message: 'Tạo người thuê thành công',
+      data,
+    };
+  }
+
+  @Get(':id')
+  @Roles(Role.OWNER)
+  async getTenantById(
+    @CurrentUser() user: any,
+    @Param('id') id: string,
+  ) {
+    const data = await this.tenantService.getTenantById(user.id, id);
+    return {
+      message: 'Lấy chi tiết người thuê thành công',
+      data,
+    };
+  }
+
+  @Patch(':id')
+  @Roles(Role.OWNER)
+  async updateTenant(
+    @CurrentUser() user: any,
+    @Param('id') id: string,
+    @Body() dto: UpdateTenantDto,
+  ) {
+    const data = await this.tenantService.updateTenant(user.id, id, dto);
+    return {
+      message: 'Cập nhật người thuê thành công',
       data,
     };
   }

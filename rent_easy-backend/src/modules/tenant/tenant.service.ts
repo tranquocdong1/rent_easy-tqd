@@ -2,6 +2,7 @@ import { Injectable, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { GetTenantsQueryDto, SortOrder, TenantSortBy } from './dto/get-tenants.dto';
 import { CreateTenantDto } from './dto/create-tenant.dto';
+import { UpdateTenantDto } from './dto/update-tenant.dto';
 import { Prisma, AuditAction } from '@prisma/client';
 
 @Injectable()
@@ -96,8 +97,8 @@ export class TenantService {
           data: {
             ownerId,
             ...dto,
-            dateOfBirth: dto.dateOfBirth ? new Date(dto.dateOfBirth) : null,
-            identityIssuedDate: dto.identityIssuedDate ? new Date(dto.identityIssuedDate) : null,
+            dateOfBirth: dto.dateOfBirth || null,
+            identityIssuedDate: dto.identityIssuedDate || null,
           },
         });
 
@@ -119,6 +120,111 @@ export class TenantService {
       });
 
       // Omit ownerId before returning
+      const { ownerId: _, ...tenantData } = result;
+      return tenantData;
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        if (error.code === 'P2002') {
+          throw new ConflictException('IDENTITY_NUMBER_ALREADY_EXISTS');
+        }
+      }
+      throw error;
+    }
+  }
+
+  async getTenantById(ownerId: string, tenantId: string) {
+    const tenant = await this.prisma.tenant.findFirst({
+      where: { id: tenantId, ownerId, deletedAt: null },
+    });
+    if (!tenant) {
+      throw new ConflictException('TENANT_NOT_FOUND');
+    }
+    return tenant;
+  }
+
+  async updateTenant(ownerId: string, tenantId: string, dto: UpdateTenantDto) {
+    const existing = await this.prisma.tenant.findFirst({
+      where: {
+        id: tenantId,
+        ownerId,
+        deletedAt: null,
+      },
+    });
+
+    if (!existing) {
+      throw new ConflictException('TENANT_NOT_FOUND');
+    }
+
+    // Prepare update data
+    const updateData: Record<string, any> = {};
+    const changedFields: string[] = [];
+    const before: Record<string, any> = {};
+    const after: Record<string, any> = {};
+
+    for (const [key, value] of Object.entries(dto)) {
+      if (value !== undefined) {
+        // Compare with existing
+        const existingValue = existing[key as keyof typeof existing];
+        let isEqual = false;
+
+        if (value instanceof Date && existingValue instanceof Date) {
+          isEqual = value.getTime() === existingValue.getTime();
+        } else {
+          isEqual = value === existingValue;
+        }
+
+        if (!isEqual) {
+          updateData[key] = value;
+          changedFields.push(key);
+          before[key] = existingValue;
+          after[key] = value;
+        }
+      }
+    }
+
+    if (Object.keys(updateData).length === 0) {
+      throw new ConflictException('NO_FIELDS_TO_UPDATE');
+    }
+
+    if (updateData.identityNumber) {
+      const duplicate = await this.prisma.tenant.findFirst({
+        where: {
+          ownerId,
+          identityNumber: updateData.identityNumber,
+          deletedAt: null,
+          id: { not: tenantId },
+        },
+      });
+      if (duplicate) {
+        throw new ConflictException('IDENTITY_NUMBER_ALREADY_EXISTS');
+      }
+    }
+
+    try {
+      const result = await this.prisma.$transaction(async (tx) => {
+        const tenant = await tx.tenant.update({
+          where: { id: tenantId },
+          data: updateData,
+        });
+
+        await tx.auditLog.create({
+          data: {
+            userId: ownerId,
+            action: AuditAction.TENANT_UPDATED,
+            entity: 'Tenant',
+            entityId: tenant.id,
+            metadata: {
+              tenantId: tenant.id,
+              changedFields,
+              before,
+              after,
+            },
+          },
+        });
+
+        return tenant;
+      });
+
       const { ownerId: _, ...tenantData } = result;
       return tenantData;
     } catch (error) {

@@ -7,6 +7,7 @@ import { propertiesApi } from '@/services/api/properties';
 import { PropertyDetail } from '@/types/property';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { formatPropertyType } from '@/lib/utils';
 
 export default function PropertyDetailPage() {
   const params = useParams();
@@ -72,7 +73,7 @@ export default function PropertyDetailPage() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <p className="text-sm text-muted-foreground">Loại hình</p>
-                <p className="font-medium">{property.propertyType}</p>
+                <p className="font-medium">{formatPropertyType(property.propertyType)}</p>
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Trạng thái</p>

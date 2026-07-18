@@ -15,6 +15,8 @@ export interface CreateTenantPayload {
   note?: string | null;
 }
 
+export type UpdateTenantPayload = Partial<CreateTenantPayload>;
+
 export const tenantsApi = {
   getAll: async (query?: TenantQuery): Promise<PaginatedResponse<Tenant>> => {
     const params = query 
@@ -23,8 +25,16 @@ export const tenantsApi = {
     const response = await axiosInstance.get(`/v1/tenants`, { params });
     return response.data;
   },
+  getById: async (id: string): Promise<{ message: string; data: Tenant }> => {
+    const response = await axiosInstance.get(`/v1/tenants/${id}`);
+    return response.data;
+  },
   create: async (payload: CreateTenantPayload): Promise<{ message: string; data: Tenant }> => {
     const response = await axiosInstance.post(`/v1/tenants`, payload);
+    return response.data;
+  },
+  update: async (id: string, payload: UpdateTenantPayload): Promise<{ message: string; data: Tenant }> => {
+    const response = await axiosInstance.patch(`/v1/tenants/${id}`, payload);
     return response.data;
   }
 };

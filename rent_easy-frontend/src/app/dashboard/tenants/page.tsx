@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 import Link from "next/link";
+import { formatGender } from "@/lib/utils";
 
 export default function TenantsPage() {
   const [tenants, setTenants] = useState<Tenant[]>([]);
@@ -67,16 +68,17 @@ export default function TenantsPage() {
               <th scope="col" className="px-6 py-3">Số điện thoại</th>
               <th scope="col" className="px-6 py-3">Email</th>
               <th scope="col" className="px-6 py-3">Giới tính</th>
+              <th scope="col" className="px-6 py-3 text-right">Thao tác</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={5} className="px-6 py-4 text-center">Đang tải...</td>
+                <td colSpan={6} className="px-6 py-4 text-center">Đang tải...</td>
               </tr>
             ) : tenants.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-6 py-4 text-center">Không có dữ liệu</td>
+                <td colSpan={6} className="px-6 py-4 text-center">Không có dữ liệu</td>
               </tr>
             ) : (
               tenants.map((tenant) => (
@@ -87,7 +89,12 @@ export default function TenantsPage() {
                   <td className="px-6 py-4">{tenant.identityNumber}</td>
                   <td className="px-6 py-4">{tenant.phone || "-"}</td>
                   <td className="px-6 py-4">{tenant.email || "-"}</td>
-                  <td className="px-6 py-4">{tenant.gender || "-"}</td>
+                  <td className="px-6 py-4">{formatGender(tenant.gender)}</td>
+                  <td className="px-6 py-4 text-right">
+                    <Link href={`/dashboard/tenants/${tenant.id}/edit`} className="font-medium text-blue-600 dark:text-blue-500 hover:underline">
+                      Sửa
+                    </Link>
+                  </td>
                 </tr>
               ))
             )}

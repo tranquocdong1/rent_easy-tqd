@@ -1,5 +1,5 @@
-import { IsEnum, IsOptional, IsString, Matches, IsNotEmpty, IsDateString, IsEmail } from 'class-validator';
-import { Transform } from 'class-transformer';
+import { IsEnum, IsOptional, IsString, Matches, IsNotEmpty, IsEmail, MaxDate, IsDate } from 'class-validator';
+import { Transform, Type } from 'class-transformer';
 import { Gender } from '@prisma/client';
 
 export function NormalizeString() {
@@ -23,8 +23,10 @@ export class CreateTenantDto {
   gender?: Gender;
 
   @IsOptional()
-  @IsDateString()
-  dateOfBirth?: string;
+  @Type(() => Date)
+  @IsDate()
+  @MaxDate(new Date(), { message: 'Ngày sinh không được ở tương lai' })
+  dateOfBirth?: Date;
 
   @IsNotEmpty()
   @IsString()
@@ -33,8 +35,10 @@ export class CreateTenantDto {
   identityNumber: string;
 
   @IsOptional()
-  @IsDateString()
-  identityIssuedDate?: string;
+  @Type(() => Date)
+  @IsDate()
+  @MaxDate(new Date(), { message: 'Ngày cấp không được ở tương lai' })
+  identityIssuedDate?: Date;
 
   @IsOptional()
   @IsString()

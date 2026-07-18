@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import Link from 'next/link';
+import { formatPropertyType } from '@/lib/utils';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -155,7 +156,7 @@ function PropertiesPageContent() {
                       {property.name}
                     </Link>
                   </td>
-                  <td className="px-4 py-3">{property.propertyType}</td>
+                  <td className="px-4 py-3">{formatPropertyType(property.propertyType)}</td>
                   <td className="px-4 py-3">
                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${property.status === 'ACTIVE' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}`}>
                       {property.status === 'ACTIVE' ? 'Đang hoạt động' : property.status === 'INACTIVE' ? 'Ngừng hoạt động' : property.status}
