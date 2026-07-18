@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Param, Body, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Param, Body, Query, UseGuards } from '@nestjs/common';
 import { TenantService } from './tenant.service';
 import { GetTenantsQueryDto } from './dto/get-tenants.dto';
 import { CreateTenantDto } from './dto/create-tenant.dto';
@@ -64,6 +64,19 @@ export class TenantController {
     return {
       message: 'Cập nhật người thuê thành công',
       data,
+    };
+  }
+
+  @Delete(':id')
+  @Roles(Role.OWNER)
+  async deleteTenant(
+    @CurrentUser() user: any,
+    @Param('id') id: string,
+  ) {
+    await this.tenantService.deleteTenant(user.id, id);
+    return {
+      message: 'Xóa người thuê thành công',
+      data: null,
     };
   }
 }

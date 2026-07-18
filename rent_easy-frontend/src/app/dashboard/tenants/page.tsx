@@ -5,6 +5,7 @@ import { tenantsApi } from "@/services/api/tenant";
 import { Tenant, TenantQuery } from "@/types/tenant";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 import Link from "next/link";
 import { formatGender } from "@/lib/utils";
@@ -14,6 +15,8 @@ export default function TenantsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState<TenantQuery>({ page: 1, limit: 10 });
+  const [tenantToDelete, setTenantToDelete] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const fetchTenants = async (currentQuery: TenantQuery) => {
     try {
@@ -37,6 +40,20 @@ export default function TenantsPage() {
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setQuery({ ...query, search: e.target.value, page: 1 });
+  };
+
+  const handleDelete = async () => {
+    if (!tenantToDelete) return;
+    setIsDeleting(true);
+    try {
+      await tenantsApi.remove(tenantToDelete);
+      setTenantToDelete(null);
+      fetchTenants(query);
+    } catch (err: any) {
+      setError(err.response?.data?.message || "Không thể xóa người thuê");
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   return (
@@ -90,10 +107,16 @@ export default function TenantsPage() {
                   <td className="px-6 py-4">{tenant.phone || "-"}</td>
                   <td className="px-6 py-4">{tenant.email || "-"}</td>
                   <td className="px-6 py-4">{formatGender(tenant.gender)}</td>
-                  <td className="px-6 py-4 text-right">
+                  <td className="px-6 py-4 text-right space-x-2">
                     <Link href={`/dashboard/tenants/${tenant.id}/edit`} className="font-medium text-blue-600 dark:text-blue-500 hover:underline">
                       Sửa
                     </Link>
+                    <button 
+                      onClick={() => setTenantToDelete(tenant.id)} 
+                      className="font-medium text-red-600 dark:text-red-500 hover:underline"
+                    >
+                      Xóa
+                    </button>
                   </td>
                 </tr>
               ))
@@ -101,6 +124,27 @@ export default function TenantsPage() {
           </tbody>
         </table>
       </div>
+
+      <AlertDialog open={!!tenantToDelete} onOpenChange={(open) => !open && setTenantToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Bạn có chắc chắn muốn xóa?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Hành động này sẽ xóa người thuê. Thông tin người thuê sẽ không còn hiển thị trên hệ thống.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting} onClick={() => setTenantToDelete(null)}>Hủy</AlertDialogCancel>
+            <AlertDialogAction 
+              disabled={isDeleting} 
+              onClick={handleDelete}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              {isDeleting ? "Đang xóa..." : "Xóa người thuê"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

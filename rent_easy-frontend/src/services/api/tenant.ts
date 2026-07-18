@@ -36,5 +36,9 @@ export const tenantsApi = {
   update: async (id: string, payload: UpdateTenantPayload): Promise<{ message: string; data: Tenant }> => {
     const response = await axiosInstance.patch(`/v1/tenants/${id}`, payload);
     return response.data;
+  },
+  remove: async (id: string): Promise<{ message: string; data: null }> => {
+    const response = await axiosInstance.delete(`/v1/tenants/${id}`);
+    return response.data;
   }
 };

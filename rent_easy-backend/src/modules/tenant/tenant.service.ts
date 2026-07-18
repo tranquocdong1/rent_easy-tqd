@@ -1,13 +1,18 @@
-import { Injectable, ConflictException } from '@nestjs/common';
+import { Injectable, ConflictException, Inject } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { GetTenantsQueryDto, SortOrder, TenantSortBy } from './dto/get-tenants.dto';
 import { CreateTenantDto } from './dto/create-tenant.dto';
 import { UpdateTenantDto } from './dto/update-tenant.dto';
 import { Prisma, AuditAction } from '@prisma/client';
+import { TENANT_DELETION_POLICY, type TenantDeletionPolicy } from './policies/tenant-deletion.policy';
 
 @Injectable()
 export class TenantService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Inject(TENANT_DELETION_POLICY)
+    private readonly deletionPolicy: TenantDeletionPolicy,
+  ) {}
 
   async getTenants(ownerId: string, query: GetTenantsQueryDto) {
     const {
@@ -235,5 +240,47 @@ export class TenantService {
       }
       throw error;
     }
+  }
+
+  async deleteTenant(ownerId: string, tenantId: string) {
+    const tenant = await this.prisma.tenant.findFirst({
+      where: {
+        id: tenantId,
+        ownerId,
+        deletedAt: null,
+      },
+    });
+
+    if (!tenant) {
+      throw new ConflictException('TENANT_NOT_FOUND');
+    }
+
+    const deletionCheck = await this.deletionPolicy.canDelete(tenantId);
+    if (!deletionCheck.allowed) {
+      throw new ConflictException(deletionCheck.reason || 'TENANT_IN_USE');
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.tenant.update({
+        where: { id: tenantId },
+        data: {
+          deletedAt: new Date(),
+        },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          userId: ownerId,
+          action: AuditAction.TENANT_DELETED,
+          entity: 'Tenant',
+          entityId: tenant.id,
+          metadata: {
+            tenantId: tenant.id,
+            tenantName: tenant.fullName,
+            identityNumber: tenant.identityNumber,
+          },
+        },
+      });
+    });
   }
 }
