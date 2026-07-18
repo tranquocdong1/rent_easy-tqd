@@ -20,6 +20,16 @@ export interface Tenant {
   updatedAt: string;
 }
 
+export interface TenantDetail extends Tenant {
+  statistics?: {
+    activeContracts: number;
+    totalContracts: number;
+  };
+  paymentStats?: {
+    unpaidInvoices: number;
+  };
+}
+
 export interface TenantQuery {
   page?: number;
   limit?: number;

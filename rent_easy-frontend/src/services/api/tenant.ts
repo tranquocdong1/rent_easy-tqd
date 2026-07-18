@@ -1,6 +1,6 @@
 import axiosInstance from '@/lib/axios';
 import { PaginatedResponse } from '@/types/property';
-import { Tenant, TenantQuery, Gender } from '@/types/tenant';
+import { Tenant, TenantQuery, Gender, TenantDetail } from '@/types/tenant';
 
 export interface CreateTenantPayload {
   fullName: string;
@@ -25,7 +25,7 @@ export const tenantsApi = {
     const response = await axiosInstance.get(`/v1/tenants`, { params });
     return response.data;
   },
-  getById: async (id: string): Promise<{ message: string; data: Tenant }> => {
+  getById: async (id: string): Promise<{ message: string; data: TenantDetail }> => {
     const response = await axiosInstance.get(`/v1/tenants/${id}`);
     return response.data;
   },

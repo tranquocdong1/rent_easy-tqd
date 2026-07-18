@@ -144,7 +144,19 @@ export class TenantService {
     if (!tenant) {
       throw new ConflictException('TENANT_NOT_FOUND');
     }
-    return tenant;
+    
+    const { ownerId: _, deletedAt: __, ...tenantData } = tenant;
+    
+    return {
+      ...tenantData,
+      statistics: {
+        activeContracts: 0,
+        totalContracts: 0,
+      },
+      paymentStats: {
+        unpaidInvoices: 0,
+      },
+    };
   }
 
   async updateTenant(ownerId: string, tenantId: string, dto: UpdateTenantDto) {

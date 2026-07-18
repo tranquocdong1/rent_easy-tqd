@@ -99,15 +99,20 @@ export default function TenantsPage() {
               </tr>
             ) : (
               tenants.map((tenant) => (
-                <tr key={tenant.id} className="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
+                <tr key={tenant.id} className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
                   <td className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                    {tenant.fullName}
+                    <Link href={`/dashboard/tenants/${tenant.id}`} className="hover:underline hover:text-primary">
+                      {tenant.fullName}
+                    </Link>
                   </td>
                   <td className="px-6 py-4">{tenant.identityNumber}</td>
                   <td className="px-6 py-4">{tenant.phone || "-"}</td>
                   <td className="px-6 py-4">{tenant.email || "-"}</td>
                   <td className="px-6 py-4">{formatGender(tenant.gender)}</td>
-                  <td className="px-6 py-4 text-right space-x-2">
+                  <td className="px-6 py-4 text-right space-x-3">
+                    <Link href={`/dashboard/tenants/${tenant.id}`} className="font-medium text-slate-600 dark:text-slate-400 hover:underline">
+                      Xem
+                    </Link>
                     <Link href={`/dashboard/tenants/${tenant.id}/edit`} className="font-medium text-blue-600 dark:text-blue-500 hover:underline">
                       Sửa
                     </Link>
