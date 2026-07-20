@@ -132,14 +132,14 @@ export default function EditContractPage() {
               <div className="space-y-2">
                 <Label>Khu trọ</Label>
                 <div className="flex h-10 w-full rounded-md border border-input bg-muted px-3 py-2 text-sm text-muted-foreground">
-                  {contract.propertyName}
+                  {contract.property.name}
                 </div>
               </div>
 
               <div className="space-y-2">
                 <Label>Phòng</Label>
                 <div className="flex h-10 w-full rounded-md border border-input bg-muted px-3 py-2 text-sm text-muted-foreground">
-                  {contract.roomCode}
+                  {contract.room.code}
                 </div>
               </div>
             </div>
@@ -147,7 +147,7 @@ export default function EditContractPage() {
             <div className="space-y-2">
               <Label>Khách thuê</Label>
               <div className="flex h-10 w-full rounded-md border border-input bg-muted px-3 py-2 text-sm text-muted-foreground">
-                {contract.tenantName}
+                {contract.tenant.fullName}
               </div>
             </div>
 

@@ -8,6 +8,7 @@ import { Prisma, AuditAction } from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
 import { Inject } from '@nestjs/common';
 import { CONTRACT_DELETION_POLICY, type ContractDeletionPolicy } from './policies/contract-deletion.policy';
+import { CONTRACT_SUMMARY_PROVIDER, type ContractSummaryProvider } from './providers/contract-summary.provider';
 
 @Injectable()
 export class ContractService {
@@ -15,6 +16,7 @@ export class ContractService {
     private prisma: PrismaService,
     private auditService: AuditService,
     @Inject(CONTRACT_DELETION_POLICY) private deletionPolicy: ContractDeletionPolicy,
+    @Inject(CONTRACT_SUMMARY_PROVIDER) private summaryProvider: ContractSummaryProvider,
   ) {}
 
   async createContract(userId: string, dto: CreateContractDto) {
@@ -127,8 +129,8 @@ export class ContractService {
         },
       },
       include: {
-        tenant: { select: { fullName: true } },
-        room: { select: { code: true, property: { select: { name: true, id: true } } } },
+        tenant: { select: { id: true, fullName: true, phone: true, identityNumber: true } },
+        room: { select: { id: true, code: true, name: true, property: { select: { name: true, id: true } } } },
       },
     });
 
@@ -136,13 +138,29 @@ export class ContractService {
       throw new NotFoundException('Không tìm thấy hợp đồng hoặc bạn không có quyền.');
     }
 
+    const summary = await this.summaryProvider.getSummary(id);
+
     return {
       message: 'Get contract detail successfully',
       data: {
-        ...contract,
-        tenantName: contract.tenant.fullName,
-        roomCode: contract.room.code,
-        propertyName: contract.room.property.name,
+        id: contract.id,
+        contractNumber: contract.contractNumber,
+        status: contract.status,
+        startDate: contract.startDate,
+        endDate: contract.endDate,
+        monthlyRent: Number(contract.monthlyRent),
+        depositAmount: Number(contract.depositAmount),
+        note: contract.note,
+        tenant: contract.tenant,
+        room: {
+          id: contract.room.id,
+          code: contract.room.code,
+          name: contract.room.name,
+        },
+        property: contract.room.property,
+        summary,
+        createdAt: contract.createdAt,
+        updatedAt: contract.updatedAt,
       },
     };
   }

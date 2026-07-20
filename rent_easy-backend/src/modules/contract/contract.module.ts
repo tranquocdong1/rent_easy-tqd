@@ -4,6 +4,7 @@ import { ContractController } from './contract.controller';
 import { PrismaModule } from '../../common/prisma/prisma.module';
 import { AuditModule } from '../audit/audit.module';
 import { CONTRACT_DELETION_POLICY, DefaultContractDeletionPolicy } from './policies/contract-deletion.policy';
+import { CONTRACT_SUMMARY_PROVIDER, DefaultContractSummaryProvider } from './providers/contract-summary.provider';
 
 @Module({
   imports: [PrismaModule, AuditModule],
@@ -13,6 +14,10 @@ import { CONTRACT_DELETION_POLICY, DefaultContractDeletionPolicy } from './polic
     {
       provide: CONTRACT_DELETION_POLICY,
       useClass: DefaultContractDeletionPolicy,
+    },
+    {
+      provide: CONTRACT_SUMMARY_PROVIDER,
+      useClass: DefaultContractSummaryProvider,
     },
   ],
 })

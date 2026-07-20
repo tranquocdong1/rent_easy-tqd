@@ -178,7 +178,11 @@ export default function ContractsPage() {
             ) : (
               items.map((contract) => (
                 <TableRow key={contract.id}>
-                  <TableCell className="font-medium">{contract.contractNumber}</TableCell>
+                  <TableCell className="font-medium">
+                    <Link href={`/dashboard/contracts/${contract.id}`} className="text-blue-600 hover:underline">
+                      {contract.contractNumber}
+                    </Link>
+                  </TableCell>
                   <TableCell>{contract.tenantName}</TableCell>
                   <TableCell>
                     <div className="text-sm">
