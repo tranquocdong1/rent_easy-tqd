@@ -18,4 +18,8 @@ export const ContractService = {
     const response = await axiosInstance.patch(`/v1/contracts/${id}`, payload);
     return response.data;
   },
+  remove: async (id: string): Promise<{ message: string; data: null }> => {
+    const response = await axiosInstance.delete(`/v1/contracts/${id}`);
+    return response.data;
+  },
 };

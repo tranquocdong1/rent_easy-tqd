@@ -6,12 +6,15 @@ import { CreateContractDto } from './dto/create-contract.dto';
 import { UpdateContractDto } from './dto/update-contract.dto';
 import { Prisma, AuditAction } from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
+import { Inject } from '@nestjs/common';
+import { CONTRACT_DELETION_POLICY, type ContractDeletionPolicy } from './policies/contract-deletion.policy';
 
 @Injectable()
 export class ContractService {
   constructor(
     private prisma: PrismaService,
-    private auditService: AuditService
+    private auditService: AuditService,
+    @Inject(CONTRACT_DELETION_POLICY) private deletionPolicy: ContractDeletionPolicy,
   ) {}
 
   async createContract(userId: string, dto: CreateContractDto) {
@@ -53,7 +56,8 @@ export class ContractService {
     const conflictContract = await this.prisma.contract.findFirst({
       where: {
         roomId,
-        status: { in: ['PENDING', 'ACTIVE'] }
+        status: { in: ['PENDING', 'ACTIVE'] },
+        deletedAt: null,
       }
     });
 
@@ -115,6 +119,7 @@ export class ContractService {
     const contract = await this.prisma.contract.findFirst({
       where: {
         id,
+        deletedAt: null,
         room: {
           property: {
             ownerId: userId,
@@ -144,7 +149,7 @@ export class ContractService {
 
   async updateContract(userId: string, id: string, dto: UpdateContractDto) {
     const contract = await this.prisma.contract.findFirst({
-      where: { id, room: { property: { ownerId: userId } } },
+      where: { id, deletedAt: null, room: { property: { ownerId: userId } } },
       include: { room: { select: { propertyId: true } } }
     });
 
@@ -268,6 +273,49 @@ export class ContractService {
     }
   }
 
+  async deleteContract(userId: string, id: string) {
+    const contract = await this.prisma.contract.findFirst({
+      where: { id, deletedAt: null },
+      include: { room: { include: { property: true } } },
+    });
+
+    if (!contract || contract.room.property.ownerId !== userId) {
+      throw new NotFoundException('Không tìm thấy hợp đồng hoặc bạn không có quyền.');
+    }
+
+    const canDelete = await this.deletionPolicy.canDelete(id);
+    if (!canDelete) {
+      throw new ConflictException('Không thể xoá hợp đồng vì đang được sử dụng.');
+    }
+
+    await this.prisma.$transaction([
+      this.prisma.contract.update({
+        where: { id },
+        data: { deletedAt: new Date() },
+      }),
+      this.prisma.auditLog.create({
+        data: {
+          userId,
+          action: AuditAction.CONTRACT_DELETED,
+          entity: 'Contract',
+          entityId: id,
+          metadata: {
+            contractId: id,
+            contractNumber: contract.contractNumber,
+            roomId: contract.roomId,
+            tenantId: contract.tenantId,
+            propertyId: contract.room.propertyId,
+          },
+        },
+      }),
+    ]);
+
+    return {
+      message: 'Contract deleted successfully',
+      data: null,
+    };
+  }
+
   async getContracts(userId: string, query: GetContractsDto) {
     const {
       page = 1,
@@ -284,6 +332,7 @@ export class ContractService {
     const skip = (page - 1) * limit;
 
     const where: Prisma.ContractWhereInput = {
+      deletedAt: null,
       room: {
         property: {
           ownerId: userId,

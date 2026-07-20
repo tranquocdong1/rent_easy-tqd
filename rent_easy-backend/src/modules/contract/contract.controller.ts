@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Query, UseGuards, Param, Patch } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query, UseGuards, Param, Patch, Delete } from '@nestjs/common';
 import { ContractService } from './contract.service';
 import { GetContractsDto } from './dto/get-contracts.dto';
 import { CreateContractDto } from './dto/create-contract.dto';
@@ -33,5 +33,10 @@ export class ContractController {
     @Body() body: UpdateContractDto,
   ) {
     return this.contractService.updateContract(userId, id, body);
+  }
+
+  @Delete(':id')
+  async deleteContract(@CurrentUser('id') userId: string, @Param('id') id: string) {
+    return this.contractService.deleteContract(userId, id);
   }
 }

@@ -38,3 +38,13 @@ export const useUpdateContract = () => {
     },
   });
 };
+
+export const useDeleteContract = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => ContractService.remove(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['contracts'] });
+    },
+  });
+};

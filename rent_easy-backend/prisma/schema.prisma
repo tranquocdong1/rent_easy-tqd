@@ -46,6 +46,7 @@ enum AuditAction {
   TENANT_DELETED
   CONTRACT_CREATED
   CONTRACT_UPDATED
+  CONTRACT_DELETED
 }
 
 enum RefreshSessionRevokeReason {
@@ -208,6 +209,7 @@ model Contract {
   status         ContractStatus @default(PENDING)
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
+  deletedAt      DateTime?
 
   tenant         Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   room           Room           @relation(fields: [roomId], references: [id], onDelete: Cascade)

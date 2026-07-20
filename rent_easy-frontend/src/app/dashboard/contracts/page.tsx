@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useContracts } from "@/hooks/use-contracts";
+import { useContracts, useDeleteContract } from "@/hooks/use-contracts";
 import { ContractStatus, ContractListItem } from "@/types/contract";
 import {
   Table,
@@ -22,6 +22,17 @@ import {
 } from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
 import Link from "next/link";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
 
 const statusMap: Record<ContractStatus, string> = {
   [ContractStatus.PENDING]: "Chờ duyệt",
@@ -38,12 +49,31 @@ export default function ContractsPage() {
   const [searchInput, setSearchInput] = useState("");
   const [status, setStatus] = useState<ContractStatus | "ALL">("ALL");
 
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const deleteMutation = useDeleteContract();
+
   const { data, isLoading, isError } = useContracts({
     page,
     limit,
     search: search || undefined,
     status: status === "ALL" ? undefined : status,
   });
+
+  const handleDelete = async () => {
+    if (!deleteId) return;
+    try {
+      await deleteMutation.mutateAsync(deleteId);
+      toast.success("Contract deleted successfully");
+      setDeleteId(null);
+    } catch (error: any) {
+      if (error?.response?.status === 409) {
+        toast.error("Không thể xoá hợp đồng vì đang được sử dụng.");
+      } else {
+        toast.error("Đã xảy ra lỗi khi xoá hợp đồng.");
+      }
+      setDeleteId(null);
+    }
+  };
 
   const handleSearch = () => {
     setSearch(searchInput);
@@ -181,13 +211,19 @@ export default function ContractsPage() {
                       {statusMap[contract.status]}
                     </span>
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="text-right space-x-2">
                     <Link
                       href={`/dashboard/contracts/${contract.id}/edit`}
                       className="text-blue-600 hover:underline text-sm font-medium"
                     >
                       Sửa
                     </Link>
+                    <button
+                      onClick={() => setDeleteId(contract.id)}
+                      className="text-red-600 hover:underline text-sm font-medium cursor-pointer"
+                    >
+                      Xoá
+                    </button>
                   </TableCell>
                 </TableRow>
               ))
@@ -219,6 +255,31 @@ export default function ContractsPage() {
           </Button>
         </div>
       )}
+
+      <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Xác nhận xoá hợp đồng</AlertDialogTitle>
+            <AlertDialogDescription>
+              Bạn có chắc chắn muốn xoá hợp đồng này? Dữ liệu sẽ được lưu dưới dạng xóa mềm.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteMutation.isPending}>Hủy</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                handleDelete();
+              }}
+              disabled={deleteMutation.isPending}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {deleteMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Xóa
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
