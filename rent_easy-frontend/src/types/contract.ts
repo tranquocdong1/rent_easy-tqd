@@ -19,6 +19,16 @@ export interface ContractListItem {
   createdAt: string;
 }
 
+export interface CreateContractPayload {
+  tenantId: string;
+  roomId: string;
+  contractNumber: string;
+  startDate: string;
+  endDate: string;
+  monthlyRent: number;
+  depositAmount: number;
+}
+
 export interface GetContractsParams {
   page?: number;
   limit?: number;

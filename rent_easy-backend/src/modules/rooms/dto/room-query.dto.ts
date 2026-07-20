@@ -1,21 +1,8 @@
-import { IsEnum, IsInt, IsOptional, IsString, Max, Min, IsIn } from 'class-validator';
-import { Type } from 'class-transformer';
+import { IsEnum, IsOptional, IsString, IsIn } from 'class-validator';
 import { RoomStatus } from '@prisma/client';
+import { PaginationDto } from '../../../common/dto/pagination.dto';
 
-export class RoomQueryDto {
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  page?: number = 1;
-
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(100)
-  limit?: number = 10;
-
+export class RoomQueryDto extends PaginationDto {
   @IsOptional()
   @IsString()
   search?: string;
@@ -27,8 +14,4 @@ export class RoomQueryDto {
   @IsOptional()
   @IsString()
   sortBy?: string = 'createdAt';
-
-  @IsOptional()
-  @IsIn(['asc', 'desc'])
-  sortOrder?: 'asc' | 'desc' = 'desc';
 }

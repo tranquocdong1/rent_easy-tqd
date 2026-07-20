@@ -21,6 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
+import Link from "next/link";
 
 const statusMap: Record<ContractStatus, string> = {
   [ContractStatus.PENDING]: "Chờ duyệt",
@@ -73,6 +74,9 @@ export default function ContractsPage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <h1 className="text-2xl font-bold tracking-tight">Quản lý Hợp đồng</h1>
+        <Link href="/dashboard/contracts/new" passHref>
+          <Button>+ Thêm Hợp Đồng</Button>
+        </Link>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-4">
