@@ -1,5 +1,5 @@
 import axiosInstance from '@/lib/axios';
-import { ContractsResponse, GetContractsParams, CreateContractPayload } from '@/types/contract';
+import { ContractsResponse, GetContractsParams, CreateContractPayload, ContractDetail, UpdateContractPayload } from '@/types/contract';
 
 export const ContractService = {
   getContracts: async (params?: GetContractsParams): Promise<ContractsResponse> => {
@@ -8,6 +8,14 @@ export const ContractService = {
   },
   createContract: async (payload: CreateContractPayload) => {
     const response = await axiosInstance.post('/v1/contracts', payload);
+    return response.data;
+  },
+  getContractById: async (id: string): Promise<{ message: string; data: ContractDetail }> => {
+    const response = await axiosInstance.get(`/v1/contracts/${id}`);
+    return response.data;
+  },
+  updateContract: async (id: string, payload: UpdateContractPayload): Promise<{ message: string; data: ContractDetail }> => {
+    const response = await axiosInstance.patch(`/v1/contracts/${id}`, payload);
     return response.data;
   },
 };

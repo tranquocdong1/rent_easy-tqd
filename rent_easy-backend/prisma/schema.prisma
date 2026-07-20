@@ -204,6 +204,7 @@ model Contract {
   endDate        DateTime
   monthlyRent    Decimal        @db.Decimal(12, 2)
   depositAmount  Decimal        @db.Decimal(12, 2)
+  note           String?        @db.Text
   status         ContractStatus @default(PENDING)
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt

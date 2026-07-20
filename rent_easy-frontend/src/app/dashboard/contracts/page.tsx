@@ -123,6 +123,7 @@ export default function ContractsPage() {
               <TableHead>Thời hạn</TableHead>
               <TableHead className="text-right">Tiền thuê</TableHead>
               <TableHead>Trạng thái</TableHead>
+              <TableHead className="text-right">Thao tác</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -140,7 +141,7 @@ export default function ContractsPage() {
               </TableRow>
             ) : items.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="h-24 text-center text-slate-500">
+                <TableCell colSpan={7} className="h-24 text-center text-slate-500">
                   Không tìm thấy hợp đồng nào.
                 </TableCell>
               </TableRow>
@@ -179,6 +180,14 @@ export default function ContractsPage() {
                     >
                       {statusMap[contract.status]}
                     </span>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Link
+                      href={`/dashboard/contracts/${contract.id}/edit`}
+                      className="text-blue-600 hover:underline text-sm font-medium"
+                    >
+                      Sửa
+                    </Link>
                   </TableCell>
                 </TableRow>
               ))

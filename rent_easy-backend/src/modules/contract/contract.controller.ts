@@ -1,7 +1,8 @@
-import { Controller, Get, Post, Body, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query, UseGuards, Param, Patch } from '@nestjs/common';
 import { ContractService } from './contract.service';
 import { GetContractsDto } from './dto/get-contracts.dto';
 import { CreateContractDto } from './dto/create-contract.dto';
+import { UpdateContractDto } from './dto/update-contract.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
@@ -18,5 +19,19 @@ export class ContractController {
   @Post()
   async createContract(@CurrentUser('id') userId: string, @Body() body: CreateContractDto) {
     return this.contractService.createContract(userId, body);
+  }
+
+  @Get(':id')
+  async getContractDetail(@CurrentUser('id') userId: string, @Param('id') id: string) {
+    return this.contractService.getContractDetail(userId, id);
+  }
+
+  @Patch(':id')
+  async updateContract(
+    @CurrentUser('id') userId: string,
+    @Param('id') id: string,
+    @Body() body: UpdateContractDto,
+  ) {
+    return this.contractService.updateContract(userId, id, body);
   }
 }
