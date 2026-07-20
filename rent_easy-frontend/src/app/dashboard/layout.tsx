@@ -64,6 +64,12 @@ export default function DashboardLayout({
               Tenants
             </Link>
             <Link 
+              href="/dashboard/contracts" 
+              className={`text-sm font-medium ${pathname.startsWith("/dashboard/contracts") ? "text-blue-600" : "text-slate-600 hover:text-slate-900"}`}
+            >
+              Contracts
+            </Link>
+            <Link 
               href="/dashboard/profile" 
               className={`text-sm font-medium ${pathname === "/dashboard/profile" ? "text-blue-600" : "text-slate-600 hover:text-slate-900"}`}
             >

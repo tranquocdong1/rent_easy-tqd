@@ -10,6 +10,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { PropertiesModule } from './modules/properties/properties.module';
 import { RoomsModule } from './modules/rooms/rooms.module';
 import { TenantModule } from './modules/tenant/tenant.module';
+import { ContractModule } from './modules/contract/contract.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { TenantModule } from './modules/tenant/tenant.module';
     PropertiesModule,
     RoomsModule,
     TenantModule,
+    ContractModule,
   ],
   controllers: [AppController],
   providers: [AppService],
