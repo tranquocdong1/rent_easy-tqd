@@ -333,6 +333,109 @@ export class ContractService {
       data: null,
     };
   }
+  private async validateRoomAvailability(roomId: string) {
+    const room = await this.prisma.room.findUnique({
+      where: { id: roomId },
+    });
+
+    if (!room) {
+      throw new NotFoundException('Phòng không tồn tại.');
+    }
+
+    if (room.status === 'MAINTENANCE' || room.status === 'INACTIVE') {
+      throw new ConflictException('Phòng đang không khả dụng (đang bảo trì hoặc ngừng hoạt động).');
+    }
+
+    return room;
+  }
+
+  async activateContract(userId: string, id: string) {
+    const contract = await this.prisma.contract.findFirst({
+      where: {
+        id,
+        deletedAt: null,
+        room: {
+          deletedAt: null,
+          property: {
+            deletedAt: null,
+            ownerId: userId,
+          },
+        },
+      },
+      include: { room: true },
+    });
+
+    if (!contract) {
+      throw new NotFoundException('Không tìm thấy hợp đồng hoặc bạn không có quyền.');
+    }
+
+    if (contract.status !== 'PENDING') {
+      throw new ConflictException(`Chỉ có thể kích hoạt hợp đồng ở trạng thái PENDING. Trạng thái hiện tại: ${contract.status}`);
+    }
+
+    await this.validateRoomAvailability(contract.roomId);
+
+    const activeContract = await this.prisma.contract.findFirst({
+      where: {
+        roomId: contract.roomId,
+        status: 'ACTIVE',
+        deletedAt: null,
+        id: { not: id },
+      },
+    });
+
+    if (activeContract) {
+      throw new ConflictException('Phòng này đã có một hợp đồng ACTIVE khác.');
+    }
+
+    try {
+      const activatedContract = await this.prisma.$transaction(async (tx) => {
+        const updatedContract = await tx.contract.update({
+          where: { id },
+          data: { status: 'ACTIVE' },
+        });
+
+        if (contract.room.status === 'AVAILABLE') {
+          await tx.room.update({
+            where: { id: contract.roomId },
+            data: { status: 'OCCUPIED' },
+          });
+        }
+
+        await tx.auditLog.create({
+          data: {
+            userId,
+            action: AuditAction.CONTRACT_ACTIVATED,
+            entity: 'Contract',
+            entityId: id,
+            metadata: {
+              contractId: id,
+              contractNumber: contract.contractNumber,
+              roomId: contract.roomId,
+              propertyId: contract.room.propertyId,
+              tenantId: contract.tenantId,
+            },
+          },
+        });
+
+        return updatedContract;
+      });
+
+      return {
+        message: 'Contract activated successfully',
+        data: {
+          id: activatedContract.id,
+          status: activatedContract.status,
+          activatedAt: new Date().toISOString(),
+        },
+      };
+    } catch (error: any) {
+      if (error.code === 'P2002') {
+        throw new ConflictException('Đã xảy ra lỗi đồng thời khi kích hoạt hợp đồng (Race condition).');
+      }
+      throw error;
+    }
+  }
 
   async getContracts(userId: string, query: GetContractsDto) {
     const {

@@ -22,4 +22,8 @@ export const ContractService = {
     const response = await axiosInstance.delete(`/v1/contracts/${id}`);
     return response.data;
   },
+  activateContract: async (id: string): Promise<{ message: string; data: { id: string; status: string; activatedAt: string } }> => {
+    const response = await axiosInstance.patch(`/v1/contracts/${id}/activate`);
+    return response.data;
+  },
 };

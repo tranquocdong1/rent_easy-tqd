@@ -1,8 +1,9 @@
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
+import { useState } from 'react';
 import Link from 'next/link';
-import { useContract } from '@/hooks/use-contracts';
+import { useContract, useActivateContract } from '@/hooks/use-contracts';
 import { ContractStatus } from '@/types/contract';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,6 +11,17 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2, ArrowLeft, Edit } from 'lucide-react';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
+import { toast } from 'sonner';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat('vi-VN', {
@@ -52,6 +64,24 @@ export default function ContractDetailPage() {
   const contractId = params.id as string;
   const { data, isLoading, error } = useContract(contractId);
 
+  const [activateOpen, setActivateOpen] = useState(false);
+  const activateMutation = useActivateContract();
+
+  const handleActivate = async () => {
+    try {
+      await activateMutation.mutateAsync(contractId);
+      toast.success("Contract activated successfully");
+      setActivateOpen(false);
+    } catch (error: any) {
+      if (error?.response?.status === 409) {
+        toast.error(error.response.data?.message || "Không thể kích hoạt hợp đồng.");
+      } else {
+        toast.error("Đã xảy ra lỗi khi kích hoạt hợp đồng.");
+      }
+      setActivateOpen(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex h-[400px] items-center justify-center">
@@ -86,12 +116,23 @@ export default function ContractDetailPage() {
             </h1>
           </div>
         </div>
-        <Link href={`/dashboard/contracts/${contract.id}/edit`}>
-          <Button variant="outline">
-            <Edit className="h-4 w-4 mr-2" />
-            Sửa
-          </Button>
-        </Link>
+        <div className="flex items-center space-x-2">
+          {contract.status === ContractStatus.PENDING && (
+            <Button
+              variant="default"
+              className="bg-green-600 hover:bg-green-700 text-white"
+              onClick={() => setActivateOpen(true)}
+            >
+              Kích hoạt
+            </Button>
+          )}
+          <Link href={`/dashboard/contracts/${contract.id}/edit`}>
+            <Button variant="outline">
+              <Edit className="h-4 w-4 mr-2" />
+              Sửa
+            </Button>
+          </Link>
+        </div>
       </div>
 
       <Tabs defaultValue="info" className="w-full">
@@ -208,6 +249,38 @@ export default function ContractDetailPage() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      <AlertDialog open={activateOpen} onOpenChange={setActivateOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Xác nhận kích hoạt hợp đồng</AlertDialogTitle>
+            <AlertDialogDescription>
+              Bạn có chắc chắn muốn kích hoạt hợp đồng này?
+              <br />
+              <br />
+              • Hợp đồng sẽ chuyển sang <b>ACTIVE</b>
+              <br />
+              • Phòng sẽ chuyển sang <b>OCCUPIED</b>
+              <br />
+              • Không thể có hợp đồng ACTIVE khác cho phòng này
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={activateMutation.isPending}>Hủy</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                handleActivate();
+              }}
+              disabled={activateMutation.isPending}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              {activateMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Kích hoạt
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

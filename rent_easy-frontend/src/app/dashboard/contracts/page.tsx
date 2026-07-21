@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useContracts, useDeleteContract } from "@/hooks/use-contracts";
+import { useContracts, useDeleteContract, useActivateContract } from "@/hooks/use-contracts";
 import { ContractStatus, ContractListItem } from "@/types/contract";
 import {
   Table,
@@ -52,6 +52,9 @@ export default function ContractsPage() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const deleteMutation = useDeleteContract();
 
+  const [activateId, setActivateId] = useState<string | null>(null);
+  const activateMutation = useActivateContract();
+
   const { data, isLoading, isError } = useContracts({
     page,
     limit,
@@ -72,6 +75,22 @@ export default function ContractsPage() {
         toast.error("Đã xảy ra lỗi khi xoá hợp đồng.");
       }
       setDeleteId(null);
+    }
+  };
+
+  const handleActivate = async () => {
+    if (!activateId) return;
+    try {
+      await activateMutation.mutateAsync(activateId);
+      toast.success("Contract activated successfully");
+      setActivateId(null);
+    } catch (error: any) {
+      if (error?.response?.status === 409) {
+        toast.error(error.response.data?.message || "Không thể kích hoạt hợp đồng.");
+      } else {
+        toast.error("Đã xảy ra lỗi khi kích hoạt hợp đồng.");
+      }
+      setActivateId(null);
     }
   };
 
@@ -216,6 +235,14 @@ export default function ContractsPage() {
                     </span>
                   </TableCell>
                   <TableCell className="text-right space-x-2">
+                    {contract.status === ContractStatus.PENDING && (
+                      <button
+                        onClick={() => setActivateId(contract.id)}
+                        className="text-green-600 hover:underline text-sm font-medium cursor-pointer"
+                      >
+                        Kích hoạt
+                      </button>
+                    )}
                     <Link
                       href={`/dashboard/contracts/${contract.id}/edit`}
                       className="text-blue-600 hover:underline text-sm font-medium"
@@ -280,6 +307,38 @@ export default function ContractsPage() {
             >
               {deleteMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
               Xóa
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={!!activateId} onOpenChange={(open) => !open && setActivateId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Xác nhận kích hoạt hợp đồng</AlertDialogTitle>
+            <AlertDialogDescription>
+              Bạn có chắc chắn muốn kích hoạt hợp đồng này?
+              <br />
+              <br />
+              • Hợp đồng sẽ chuyển sang <b>ACTIVE</b>
+              <br />
+              • Phòng sẽ chuyển sang <b>OCCUPIED</b>
+              <br />
+              • Không thể có hợp đồng ACTIVE khác cho phòng này
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={activateMutation.isPending}>Hủy</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                handleActivate();
+              }}
+              disabled={activateMutation.isPending}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              {activateMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Kích hoạt
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

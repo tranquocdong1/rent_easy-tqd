@@ -47,6 +47,7 @@ enum AuditAction {
   CONTRACT_CREATED
   CONTRACT_UPDATED
   CONTRACT_DELETED
+  CONTRACT_ACTIVATED
 }
 
 enum RefreshSessionRevokeReason {

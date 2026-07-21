@@ -39,4 +39,9 @@ export class ContractController {
   async deleteContract(@CurrentUser('id') userId: string, @Param('id') id: string) {
     return this.contractService.deleteContract(userId, id);
   }
+
+  @Patch(':id/activate')
+  async activateContract(@CurrentUser('id') userId: string, @Param('id') id: string) {
+    return this.contractService.activateContract(userId, id);
+  }
 }
