@@ -2,8 +2,10 @@ import { Injectable, BadRequestException, NotFoundException, ConflictException, 
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { InvoiceQueryDto } from './dto/invoice-query.dto';
 import { CreateInvoiceDto } from './dto/create-invoice.dto';
+import { UpdateInvoiceDto } from './dto/update-invoice.dto';
 import { InvoiceResponseDto } from './dto/invoice-response.dto';
-import { Prisma, AuditAction, InvoiceStatus, ContractStatus } from '@prisma/client';
+import { InvoiceDetailResponseDto } from './dto/invoice-detail-response.dto';
+import { Prisma, AuditAction, InvoiceStatus, ContractStatus, Invoice } from '@prisma/client';
 
 @Injectable()
 export class InvoicesService {
@@ -345,5 +347,250 @@ export class InvoicesService {
         throw error;
       }
     }
+  }
+
+  async findOne(ownerId: string, id: string) {
+    const invoice = await this.prisma.invoice.findFirst({
+      where: {
+        id,
+        deletedAt: null,
+        contract: {
+          deletedAt: null,
+        },
+      },
+      include: {
+        contract: {
+          include: {
+            tenant: true,
+            room: {
+              include: {
+                property: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!invoice || invoice.contract.room.property.ownerId !== ownerId) {
+      throw new NotFoundException({
+        message: 'Không tìm thấy hóa đơn hoặc bạn không có quyền truy cập.',
+        code: 'INVOICE_NOT_FOUND',
+      });
+    }
+
+    return {
+      message: 'Get invoice details successfully',
+      data: InvoiceDetailResponseDto.fromEntity(invoice),
+    };
+  }
+
+  /**
+   * Helper function to recalculate the invoice status.
+   * This can be used by both Update Invoice and Payment Module.
+   */
+  recalculateInvoiceStatus(totalAmount: number, paidAmount: number): InvoiceStatus {
+    const remainingAmount = totalAmount - paidAmount;
+    if (remainingAmount <= 0) return InvoiceStatus.PAID;
+    if (remainingAmount === totalAmount) return InvoiceStatus.UNPAID;
+    return InvoiceStatus.PARTIALLY_PAID;
+  }
+
+  async update(ownerId: string, id: string, dto: UpdateInvoiceDto) {
+    // 1. Load Invoice & Validate Ownership & Soft Delete Check
+    const invoice = await this.prisma.invoice.findFirst({
+      where: {
+        id,
+        deletedAt: null,
+        contract: {
+          deletedAt: null,
+        },
+      },
+      include: {
+        contract: {
+          include: {
+            room: {
+              include: {
+                property: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!invoice || invoice.contract.room.property.ownerId !== ownerId) {
+      throw new NotFoundException({
+        message: 'Không tìm thấy hóa đơn hoặc bạn không có quyền truy cập.',
+        code: 'INVOICE_NOT_FOUND',
+      });
+    }
+
+    // 2. Validate Invoice Status
+    if (invoice.status !== InvoiceStatus.UNPAID) {
+      throw new ConflictException({
+        message: 'Chỉ có thể cập nhật hóa đơn khi trạng thái là chưa thanh toán.',
+        code: 'INVOICE_CANNOT_UPDATE',
+      });
+    }
+
+    // 3. Detect Changes (only on editable fields)
+    const editableFields: (keyof UpdateInvoiceDto)[] = [
+      'issueDate', 'dueDate', 'electricityAmount', 'waterAmount',
+      'serviceAmount', 'otherAmount', 'discountAmount', 'note'
+    ];
+
+    const changedFields: string[] = [];
+    const updateData: any = {};
+    const before: any = {};
+    const after: any = {};
+
+    for (const field of editableFields) {
+      if (dto[field] !== undefined) {
+        let isChanged = false;
+        if (field === 'issueDate' || field === 'dueDate') {
+          const newDate = new Date(dto[field] as string);
+          if (newDate.getTime() !== invoice[field].getTime()) {
+            isChanged = true;
+            updateData[field] = newDate;
+          }
+        } else if (field === 'note') {
+          if (dto.note !== invoice.note) {
+            isChanged = true;
+            updateData.note = dto.note;
+          }
+        } else {
+          // Amounts (Decimal type in Prisma comes as object or string usually, but in NestJS we can compare as Number)
+          const newAmount = Number(dto[field]);
+          const oldAmount = Number(invoice[field]);
+          if (newAmount !== oldAmount) {
+            isChanged = true;
+            updateData[field] = newAmount;
+          }
+        }
+
+        if (isChanged) {
+          changedFields.push(field);
+          before[field] = invoice[field];
+          after[field] = updateData[field] !== undefined ? updateData[field] : dto[field];
+        }
+      }
+    }
+
+    if (changedFields.length === 0) {
+      throw new BadRequestException({
+        message: 'Không có dữ liệu thay đổi để cập nhật.',
+        code: 'NO_FIELDS_TO_UPDATE',
+      });
+    }
+
+    // 4. Validate Date
+    const newIssueDate = updateData.issueDate || invoice.issueDate;
+    const newDueDate = updateData.dueDate || invoice.dueDate;
+    
+    if (newIssueDate > newDueDate) {
+      throw new BadRequestException({
+        message: 'Ngày lập hóa đơn không được lớn hơn ngày đến hạn.',
+        code: 'INVALID_DATE_RANGE',
+      });
+    }
+
+    if (newIssueDate < invoice.contract.startDate || newDueDate > invoice.contract.endDate) {
+      throw new BadRequestException({
+        message: 'Ngày lập và ngày đến hạn hóa đơn phải nằm trong thời gian hiệu lực hợp đồng.',
+        code: 'INVALID_DATE_RANGE_CONTRACT',
+      });
+    }
+
+    // 5. Calculate new totalAmount
+    const electricityAmount = updateData.electricityAmount !== undefined ? updateData.electricityAmount : Number(invoice.electricityAmount);
+    const waterAmount = updateData.waterAmount !== undefined ? updateData.waterAmount : Number(invoice.waterAmount);
+    const serviceAmount = updateData.serviceAmount !== undefined ? updateData.serviceAmount : Number(invoice.serviceAmount);
+    const otherAmount = updateData.otherAmount !== undefined ? updateData.otherAmount : Number(invoice.otherAmount);
+    const discountAmount = updateData.discountAmount !== undefined ? updateData.discountAmount : Number(invoice.discountAmount);
+    const roomRent = Number(invoice.roomRent);
+
+    const newTotalAmount = roomRent + electricityAmount + waterAmount + serviceAmount + otherAmount - discountAmount;
+    
+    if (newTotalAmount < 0) {
+      throw new BadRequestException({
+        message: 'Tổng tiền hóa đơn không hợp lệ (nhỏ hơn 0).',
+        code: 'INVALID_TOTAL_AMOUNT',
+      });
+    }
+
+    const paidAmount = Number(invoice.paidAmount);
+    if (newTotalAmount < paidAmount) {
+      throw new ConflictException({
+        message: 'Tổng tiền mới không được nhỏ hơn số tiền đã thanh toán.',
+        code: 'TOTAL_AMOUNT_LESS_THAN_PAID',
+      });
+    }
+
+    // If totalAmount changed, add it to updateData and Audit
+    if (newTotalAmount !== Number(invoice.totalAmount)) {
+      updateData.totalAmount = newTotalAmount;
+      before.totalAmount = invoice.totalAmount;
+      after.totalAmount = newTotalAmount;
+      changedFields.push('totalAmount');
+
+      // 6. Recalculate Status
+      const newStatus = this.recalculateInvoiceStatus(newTotalAmount, paidAmount);
+      if (newStatus !== invoice.status) {
+        updateData.status = newStatus;
+        before.status = invoice.status;
+        after.status = newStatus;
+        changedFields.push('status');
+      }
+    }
+
+    // 7. Transaction: Update Invoice & AuditLog
+    const result = await this.prisma.$transaction(async (tx) => {
+      const updatedInvoice = await tx.invoice.update({
+        where: { id },
+        data: updateData,
+        include: {
+          contract: {
+            include: {
+              tenant: true,
+              room: {
+                include: {
+                  property: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          userId: ownerId,
+          action: AuditAction.INVOICE_UPDATED,
+          entity: 'Invoice',
+          entityId: updatedInvoice.id,
+          metadata: {
+            invoiceId: updatedInvoice.id,
+            invoiceNumber: updatedInvoice.invoiceNumber,
+            contractId: updatedInvoice.contractId,
+            tenantId: updatedInvoice.contract.tenantId,
+            roomId: updatedInvoice.contract.roomId,
+            propertyId: updatedInvoice.contract.room.propertyId,
+            billingMonth: updatedInvoice.billingMonth,
+            billingYear: updatedInvoice.billingYear,
+            before,
+            after,
+            changedFields,
+          },
+        },
+      });
+
+      return updatedInvoice;
+    });
+
+    return {
+      message: 'Invoice updated successfully',
+      data: InvoiceDetailResponseDto.fromEntity(result),
+    };
   }
 }

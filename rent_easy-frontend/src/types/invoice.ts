@@ -22,6 +22,35 @@ export interface Invoice {
   createdAt: Date | string;
 }
 
+export interface InvoiceDetail {
+  id: string;
+  invoiceNumber: string;
+  contractId: string;
+  tenantName: string;
+  roomCode: string;
+  propertyName: string;
+  billingMonth: number;
+  billingYear: number;
+  billingPeriod: string;
+  issueDate: string;
+  dueDate: string;
+  
+  roomRent: number;
+  electricityAmount: number;
+  waterAmount: number;
+  serviceAmount: number;
+  otherAmount: number;
+  discountAmount: number;
+  
+  totalAmount: number;
+  paidAmount: number;
+  remainingAmount: number;
+  status: InvoiceStatus;
+  note: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface InvoiceQuery {
   page?: number;
   limit?: number;
@@ -55,6 +84,11 @@ export interface InvoiceResponse {
   data: Invoice;
 }
 
+export interface InvoiceDetailResponse {
+  message: string;
+  data: InvoiceDetail;
+}
+
 export interface CreateInvoiceRequest {
   contractId: string;
   billingMonth: number;
@@ -66,5 +100,16 @@ export interface CreateInvoiceRequest {
   serviceAmount: number;
   otherAmount: number;
   discountAmount: number;
+  note?: string;
+}
+
+export interface UpdateInvoiceRequest {
+  issueDate?: string;
+  dueDate?: string;
+  electricityAmount?: number;
+  waterAmount?: number;
+  serviceAmount?: number;
+  otherAmount?: number;
+  discountAmount?: number;
   note?: string;
 }

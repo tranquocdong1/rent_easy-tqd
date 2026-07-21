@@ -217,6 +217,9 @@ function InvoicesPageContent() {
                     <InvoiceBadge status={invoice.status} />
                   </td>
                   <td className="px-4 py-3 text-right space-x-4">
+                    <Link href={`/dashboard/invoices/${invoice.id}/edit`} className="text-amber-600 hover:underline">
+                      Sửa
+                    </Link>
                     <Link href={`/dashboard/invoices/${invoice.id}`} className="text-blue-600 hover:underline">
                       Chi tiết
                     </Link>

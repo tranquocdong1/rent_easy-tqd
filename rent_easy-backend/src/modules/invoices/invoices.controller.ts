@@ -1,7 +1,8 @@
-import { Controller, Get, Post, Body, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Param, Body, Query, UseGuards } from '@nestjs/common';
 import { InvoicesService } from './invoices.service';
 import { InvoiceQueryDto } from './dto/invoice-query.dto';
 import { CreateInvoiceDto } from './dto/create-invoice.dto';
+import { UpdateInvoiceDto } from './dto/update-invoice.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -22,5 +23,15 @@ export class InvoicesController {
   @Get()
   findAll(@CurrentUser('id') ownerId: string, @Query() query: InvoiceQueryDto) {
     return this.invoicesService.findAll(ownerId, query);
+  }
+
+  @Get(':id')
+  findOne(@CurrentUser('id') ownerId: string, @Param('id') id: string) {
+    return this.invoicesService.findOne(ownerId, id);
+  }
+
+  @Patch(':id')
+  update(@CurrentUser('id') ownerId: string, @Param('id') id: string, @Body() dto: UpdateInvoiceDto) {
+    return this.invoicesService.update(ownerId, id, dto);
   }
 }
