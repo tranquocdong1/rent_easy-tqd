@@ -1,15 +1,11 @@
 import { InvoiceStatus } from '@prisma/client';
+import { InvoiceSummary } from '../policies/invoice-summary.provider';
 
 export class InvoiceDetailResponseDto {
   id: string;
   invoiceNumber: string;
-  contractId: string;
-  tenantName: string;
-  roomCode: string;
-  propertyName: string;
   billingMonth: number;
   billingYear: number;
-  billingPeriod: string;
   issueDate: Date;
   dueDate: Date;
   
@@ -25,23 +21,44 @@ export class InvoiceDetailResponseDto {
   remainingAmount: number;
   status: InvoiceStatus;
   note: string | null;
+
+  contract: {
+    id: string;
+    contractNumber: string;
+  };
+  tenant: {
+    id: string;
+    fullName: string;
+    phone: string;
+  };
+  room: {
+    id: string;
+    code: string;
+    name: string;
+  };
+  property: {
+    id: string;
+    name: string;
+  };
+  summary: InvoiceSummary;
+
   createdAt: Date;
   updatedAt: Date;
 
-  static fromEntity(entity: any): InvoiceDetailResponseDto {
+  static fromEntity(entity: any, summary?: InvoiceSummary): InvoiceDetailResponseDto {
     const totalAmount = Number(entity.totalAmount);
     const paidAmount = Number(entity.paidAmount);
     
+    // Ensure remainingAmount is non-negative
+    let remainingAmount = totalAmount - paidAmount;
+    if (remainingAmount < 0) remainingAmount = 0;
+
     return {
       id: entity.id,
       invoiceNumber: entity.invoiceNumber,
-      contractId: entity.contractId,
-      tenantName: entity.contract?.tenant?.fullName || '',
-      roomCode: entity.contract?.room?.code || '',
-      propertyName: entity.contract?.room?.property?.name || '',
+      
       billingMonth: entity.billingMonth,
       billingYear: entity.billingYear,
-      billingPeriod: `${entity.billingMonth.toString().padStart(2, '0')}/${entity.billingYear}`,
       issueDate: entity.issueDate,
       dueDate: entity.dueDate,
       
@@ -54,9 +71,35 @@ export class InvoiceDetailResponseDto {
       
       totalAmount,
       paidAmount,
-      remainingAmount: totalAmount - paidAmount,
+      remainingAmount,
       status: entity.status,
       note: entity.note,
+
+      contract: {
+        id: entity.contract?.id || '',
+        contractNumber: entity.contract?.contractNumber || '',
+      },
+      tenant: {
+        id: entity.contract?.tenant?.id || '',
+        fullName: entity.contract?.tenant?.fullName || '',
+        phone: entity.contract?.tenant?.phone || '',
+      },
+      room: {
+        id: entity.contract?.room?.id || '',
+        code: entity.contract?.room?.code || '',
+        name: entity.contract?.room?.name || '',
+      },
+      property: {
+        id: entity.contract?.room?.property?.id || '',
+        name: entity.contract?.room?.property?.name || '',
+      },
+      
+      summary: summary || {
+        payments: 0,
+        paidAmount: paidAmount,
+        remainingAmount: remainingAmount,
+      },
+      
       createdAt: entity.createdAt,
       updatedAt: entity.updatedAt,
     };

@@ -26,8 +26,8 @@ export class InvoicesController {
   }
 
   @Get(':id')
-  findOne(@CurrentUser('id') ownerId: string, @Param('id') id: string) {
-    return this.invoicesService.findOne(ownerId, id);
+  getById(@CurrentUser('id') ownerId: string, @Param('id') id: string) {
+    return this.invoicesService.getById(ownerId, id);
   }
 
   @Patch(':id')

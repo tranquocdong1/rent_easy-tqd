@@ -7,6 +7,7 @@ import { InvoiceResponseDto } from './dto/invoice-response.dto';
 import { InvoiceDetailResponseDto } from './dto/invoice-detail-response.dto';
 import { Prisma, AuditAction, InvoiceStatus, ContractStatus, Invoice } from '@prisma/client';
 import { INVOICE_DELETION_POLICY, type InvoiceDeletionPolicy } from './policies/invoice-deletion.policy';
+import { INVOICE_SUMMARY_PROVIDER, type InvoiceSummaryProvider } from './policies/invoice-summary.provider';
 
 @Injectable()
 export class InvoicesService {
@@ -14,6 +15,8 @@ export class InvoicesService {
     private readonly prisma: PrismaService,
     @Inject(INVOICE_DELETION_POLICY)
     private readonly invoiceDeletionPolicy: InvoiceDeletionPolicy,
+    @Inject(INVOICE_SUMMARY_PROVIDER)
+    private readonly invoiceSummaryProvider: InvoiceSummaryProvider,
   ) {}
 
   async findAll(ownerId: string, query: InvoiceQueryDto) {
@@ -354,7 +357,7 @@ export class InvoicesService {
     }
   }
 
-  async findOne(ownerId: string, id: string) {
+  async getById(ownerId: string, id: string) {
     const invoice = await this.prisma.invoice.findFirst({
       where: {
         id,
@@ -363,13 +366,48 @@ export class InvoicesService {
           deletedAt: null,
         },
       },
-      include: {
+      select: {
+        id: true,
+        invoiceNumber: true,
+        billingMonth: true,
+        billingYear: true,
+        issueDate: true,
+        dueDate: true,
+        roomRent: true,
+        electricityAmount: true,
+        waterAmount: true,
+        serviceAmount: true,
+        otherAmount: true,
+        discountAmount: true,
+        totalAmount: true,
+        paidAmount: true,
+        status: true,
+        note: true,
+        createdAt: true,
+        updatedAt: true,
         contract: {
-          include: {
-            tenant: true,
+          select: {
+            id: true,
+            contractNumber: true,
+            tenant: {
+              select: {
+                id: true,
+                fullName: true,
+                phone: true,
+              },
+            },
             room: {
-              include: {
-                property: true,
+              select: {
+                id: true,
+                code: true,
+                name: true,
+                property: {
+                  select: {
+                    id: true,
+                    name: true,
+                    ownerId: true,
+                  },
+                },
               },
             },
           },
@@ -377,16 +415,18 @@ export class InvoicesService {
       },
     });
 
-    if (!invoice || invoice.contract.room.property.ownerId !== ownerId) {
+    if (!invoice || invoice.contract?.room?.property?.ownerId !== ownerId) {
       throw new NotFoundException({
         message: 'Không tìm thấy hóa đơn hoặc bạn không có quyền truy cập.',
         code: 'INVOICE_NOT_FOUND',
       });
     }
 
+    const summary = await this.invoiceSummaryProvider.getSummary(invoice as unknown as Invoice);
+
     return {
       message: 'Get invoice details successfully',
-      data: InvoiceDetailResponseDto.fromEntity(invoice),
+      data: InvoiceDetailResponseDto.fromEntity(invoice, summary),
     };
   }
 
@@ -592,10 +632,13 @@ export class InvoicesService {
 
       return updatedInvoice;
     });
+    
+    // Calculate summary for the updated invoice
+    const summary = await this.invoiceSummaryProvider.getSummary(result as unknown as Invoice);
 
     return {
       message: 'Invoice updated successfully',
-      data: InvoiceDetailResponseDto.fromEntity(result),
+      data: InvoiceDetailResponseDto.fromEntity(result, summary),
     };
   }
 
