@@ -1,5 +1,5 @@
 import { IsEnum, IsOptional, IsString, IsUUID, IsNumber, Min, Max } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Type, Transform } from 'class-transformer';
 import { InvoiceStatus } from '@prisma/client';
 import { PaginationDto } from '../../../common/dto/pagination.dto';
 
@@ -11,6 +11,11 @@ export class InvoiceQueryDto extends PaginationDto {
   @IsOptional()
   @IsEnum(InvoiceStatus)
   status?: InvoiceStatus;
+
+  @IsOptional()
+  @IsEnum(InvoiceStatus, { each: true })
+  @Transform(({ value }) => (Array.isArray(value) ? value : [value]))
+  statuses?: InvoiceStatus[];
 
   @IsOptional()
   @IsUUID()

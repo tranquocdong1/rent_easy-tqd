@@ -25,6 +25,7 @@ export class InvoicesService {
       limit = 10,
       search,
       status,
+      statuses,
       propertyId,
       roomId,
       contractId,
@@ -67,6 +68,10 @@ export class InvoicesService {
 
     if (status) {
       where.status = status;
+    }
+    
+    if (statuses && statuses.length > 0) {
+      where.status = { in: statuses };
     }
     
     if (contractId) {

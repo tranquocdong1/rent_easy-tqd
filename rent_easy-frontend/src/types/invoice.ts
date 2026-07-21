@@ -56,6 +56,7 @@ export interface InvoiceQuery {
   limit?: number;
   search?: string;
   status?: InvoiceStatus;
+  statuses?: InvoiceStatus[];
   propertyId?: string;
   roomId?: string;
   contractId?: string;

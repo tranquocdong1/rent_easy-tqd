@@ -124,7 +124,9 @@ function PaymentsPageContent() {
     <div className="p-6 max-w-7xl mx-auto space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold tracking-tight">Lịch sử Thanh toán</h1>
-        {/* Module sau sẽ có nút tạo Payment nếu cần */}
+        <Link href="/dashboard/payments/new" passHref>
+          <Button>+ Thêm Thanh toán</Button>
+        </Link>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
