@@ -14,6 +14,7 @@ import { TenantModule } from './modules/tenant/tenant.module';
 import { ContractModule } from './modules/contract/contract.module';
 import { InvoicesModule } from './modules/invoices/invoices.module';
 import { PaymentsModule } from './modules/payments/payments.module';
+import { GlobalPoliciesModule } from './common/policies/policies.module';
 
 @Module({
   imports: [
@@ -30,8 +31,11 @@ import { PaymentsModule } from './modules/payments/payments.module';
     ContractModule,
     InvoicesModule,
     PaymentsModule,
+    GlobalPoliciesModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+  ],
 })
 export class AppModule {}

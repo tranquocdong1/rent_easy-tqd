@@ -96,6 +96,7 @@ export class InvoiceDetailResponseDto {
       
       summary: summary || {
         payments: 0,
+        completedPayments: 0,
         paidAmount: paidAmount,
         remainingAmount: remainingAmount,
       },

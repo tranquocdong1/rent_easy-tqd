@@ -4,8 +4,8 @@ import { ContractController } from './contract.controller';
 import { ContractSchedulerService } from './contract-scheduler.service';
 import { PrismaModule } from '../../common/prisma/prisma.module';
 import { AuditModule } from '../audit/audit.module';
-import { CONTRACT_DELETION_POLICY, DefaultContractDeletionPolicy } from './policies/contract-deletion.policy';
-import { CONTRACT_SUMMARY_PROVIDER, DefaultContractSummaryProvider } from './providers/contract-summary.provider';
+import { CONTRACT_DELETION_POLICY } from './policies/contract-deletion.policy';
+import { CONTRACT_SUMMARY_PROVIDER } from './providers/contract-summary.provider';
 
 @Module({
   imports: [PrismaModule, AuditModule],
@@ -13,14 +13,6 @@ import { CONTRACT_SUMMARY_PROVIDER, DefaultContractSummaryProvider } from './pro
   providers: [
     ContractService,
     ContractSchedulerService,
-    {
-      provide: CONTRACT_DELETION_POLICY,
-      useClass: DefaultContractDeletionPolicy,
-    },
-    {
-      provide: CONTRACT_SUMMARY_PROVIDER,
-      useClass: DefaultContractSummaryProvider,
-    },
   ],
 })
 export class ContractModule {}

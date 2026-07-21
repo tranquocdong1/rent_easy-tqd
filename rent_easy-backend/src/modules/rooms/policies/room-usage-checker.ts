@@ -7,16 +7,3 @@ import { Injectable } from '@nestjs/common';
 export abstract class RoomUsageChecker {
   abstract canDeleteRoom(roomId: string): Promise<boolean>;
 }
-
-@Injectable()
-export class DefaultRoomUsageChecker implements RoomUsageChecker {
-  /**
-   * Temporary implementation for Room Deletion Policy.
-   * Currently, it always allows deletion (returns true).
-   * This implementation WILL BE REPLACED by the Contract Module
-   * once it is implemented to ensure data consistency.
-   */
-  async canDeleteRoom(roomId: string): Promise<boolean> {
-    return true;
-  }
-}
