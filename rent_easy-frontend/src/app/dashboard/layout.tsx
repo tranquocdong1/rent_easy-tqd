@@ -81,6 +81,12 @@ export default function DashboardLayout({
             >
               Profile
             </Link>
+            <Link 
+              href="/dashboard/payments" 
+              className={`text-sm font-medium ${pathname === "/dashboard/payments" ? "text-blue-600" : "text-slate-600 hover:text-slate-900"}`}
+            >
+              Payments
+            </Link>
           </nav>
         </div>
         

@@ -267,4 +267,40 @@ model Invoice {
   @@index([createdAt])
   @@index([dueDate])
   @@index([billingMonth, billingYear])
+  payments       Payment[]
+}
+
+enum PaymentMethod {
+  CASH
+  BANK_TRANSFER
+  CREDIT_CARD
+  OTHER
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+model Payment {
+  id             String         @id @default(uuid())
+  invoiceId      String
+  receiptNumber  String         @unique @db.VarChar(50)
+  amount         Decimal        @db.Decimal(12, 2)
+  paymentDate    DateTime
+  paymentMethod  PaymentMethod
+  status         PaymentStatus  @default(PENDING)
+  note           String?        @db.Text
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  deletedAt      DateTime?
+
+  invoice        Invoice        @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([invoiceId])
+  @@index([status])
+  @@index([createdAt])
+  @@index([paymentDate])
 }

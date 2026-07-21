@@ -13,6 +13,7 @@ import { RoomsModule } from './modules/rooms/rooms.module';
 import { TenantModule } from './modules/tenant/tenant.module';
 import { ContractModule } from './modules/contract/contract.module';
 import { InvoicesModule } from './modules/invoices/invoices.module';
+import { PaymentsModule } from './modules/payments/payments.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { InvoicesModule } from './modules/invoices/invoices.module';
     TenantModule,
     ContractModule,
     InvoicesModule,
+    PaymentsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
