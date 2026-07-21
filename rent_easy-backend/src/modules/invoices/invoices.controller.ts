@@ -1,6 +1,7 @@
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query, UseGuards } from '@nestjs/common';
 import { InvoicesService } from './invoices.service';
 import { InvoiceQueryDto } from './dto/invoice-query.dto';
+import { CreateInvoiceDto } from './dto/create-invoice.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -12,6 +13,11 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 @Roles(Role.OWNER)
 export class InvoicesController {
   constructor(private readonly invoicesService: InvoicesService) {}
+
+  @Post()
+  create(@CurrentUser('id') ownerId: string, @Body() dto: CreateInvoiceDto) {
+    return this.invoicesService.create(ownerId, dto);
+  }
 
   @Get()
   findAll(@CurrentUser('id') ownerId: string, @Query() query: InvoiceQueryDto) {

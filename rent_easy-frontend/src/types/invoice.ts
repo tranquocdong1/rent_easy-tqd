@@ -49,3 +49,22 @@ export interface InvoicesResponse {
     };
   };
 }
+
+export interface InvoiceResponse {
+  message: string;
+  data: Invoice;
+}
+
+export interface CreateInvoiceRequest {
+  contractId: string;
+  billingMonth: number;
+  billingYear: number;
+  issueDate: string;
+  dueDate: string;
+  electricityAmount: number;
+  waterAmount: number;
+  serviceAmount: number;
+  otherAmount: number;
+  discountAmount: number;
+  note?: string;
+}
