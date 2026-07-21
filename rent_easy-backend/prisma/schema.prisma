@@ -50,6 +50,9 @@ enum AuditAction {
   CONTRACT_ACTIVATED
   CONTRACT_TERMINATED
   CONTRACT_EXPIRED
+  INVOICE_CREATED
+  INVOICE_UPDATED
+  INVOICE_DELETED
 }
 
 enum RefreshSessionRevokeReason {
@@ -223,4 +226,38 @@ model Contract {
   @@index([roomId])
   @@index([status])
   @@index([createdAt])
+  invoices       Invoice[]
+}
+
+enum InvoiceStatus {
+  DRAFT
+  UNPAID
+  PARTIALLY_PAID
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
+model Invoice {
+  id             String         @id @default(uuid())
+  contractId     String
+  invoiceNumber  String         @unique @db.VarChar(50)
+  billingMonth   Int
+  billingYear    Int
+  totalAmount    Decimal        @db.Decimal(12, 2)
+  paidAmount     Decimal        @default(0) @db.Decimal(12, 2)
+  dueDate        DateTime
+  note           String?        @db.Text
+  status         InvoiceStatus  @default(DRAFT)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  deletedAt      DateTime?
+
+  contract       Contract       @relation(fields: [contractId], references: [id], onDelete: Cascade)
+
+  @@index([contractId])
+  @@index([status])
+  @@index([createdAt])
+  @@index([dueDate])
+  @@index([billingMonth, billingYear])
 }

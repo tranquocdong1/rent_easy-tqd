@@ -12,6 +12,7 @@ import { PropertiesModule } from './modules/properties/properties.module';
 import { RoomsModule } from './modules/rooms/rooms.module';
 import { TenantModule } from './modules/tenant/tenant.module';
 import { ContractModule } from './modules/contract/contract.module';
+import { InvoicesModule } from './modules/invoices/invoices.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { ContractModule } from './modules/contract/contract.module';
     RoomsModule,
     TenantModule,
     ContractModule,
+    InvoicesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
