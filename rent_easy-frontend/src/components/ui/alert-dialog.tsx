@@ -1,7 +1,7 @@
 import * as React from "react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-
+import { Slot } from "@radix-ui/react-slot"
 // This is a minimal implementation of AlertDialog to avoid compilation errors.
 // The user should run `npx shadcn@latest add alert-dialog` to replace this with the real Radix-based component.
 
@@ -39,8 +39,14 @@ export function AlertDialogTitle({ children, className }: React.HTMLAttributes<H
   return <h2 className={cn("text-lg font-semibold", className)}>{children}</h2>
 }
 
-export function AlertDialogDescription({ children, className }: React.HTMLAttributes<HTMLParagraphElement>) {
-  return <p className={cn("text-sm text-muted-foreground", className)}>{children}</p>
+
+export interface AlertDialogDescriptionProps extends React.HTMLAttributes<HTMLParagraphElement> {
+  asChild?: boolean;
+}
+
+export function AlertDialogDescription({ children, className, asChild }: AlertDialogDescriptionProps) {
+  const Comp = asChild ? Slot : "p"
+  return <Comp className={cn("text-sm text-muted-foreground", className)}>{children}</Comp>
 }
 
 export function AlertDialogAction({ children, onClick, className }: React.ButtonHTMLAttributes<HTMLButtonElement>) {

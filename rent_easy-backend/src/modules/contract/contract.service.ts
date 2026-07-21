@@ -4,7 +4,9 @@ import { GetContractsDto } from './dto/get-contracts.dto';
 import { ContractListItemDto } from './dto/contract-list-item.dto';
 import { CreateContractDto } from './dto/create-contract.dto';
 import { UpdateContractDto } from './dto/update-contract.dto';
+import { TerminateContractDto } from './dto/terminate-contract.dto';
 import { Prisma, AuditAction } from '@prisma/client';
+import { endOfDay, startOfDay } from 'date-fns';
 import { AuditService } from '../audit/audit.service';
 import { Inject } from '@nestjs/common';
 import { CONTRACT_DELETION_POLICY, type ContractDeletionPolicy } from './policies/contract-deletion.policy';
@@ -435,6 +437,98 @@ export class ContractService {
       }
       throw error;
     }
+  }
+
+  async terminateContract(userId: string, id: string, dto: TerminateContractDto) {
+    const contract = await this.prisma.contract.findFirst({
+      where: {
+        id,
+        deletedAt: null,
+        room: {
+          property: {
+            ownerId: userId,
+          },
+        },
+      },
+      include: { room: true },
+    });
+
+    if (!contract) {
+      throw new NotFoundException('Không tìm thấy hợp đồng hoặc bạn không có quyền.');
+    }
+
+    if (contract.status !== 'ACTIVE') {
+      throw new ConflictException(`Chỉ có thể chấm dứt hợp đồng đang ACTIVE. Trạng thái hiện tại: ${contract.status}`);
+    }
+
+    const terminatedDateObj = new Date(dto.terminatedDate);
+    
+    if (startOfDay(terminatedDateObj) < startOfDay(contract.startDate)) {
+      throw new BadRequestException('Ngày chấm dứt không được nhỏ hơn ngày bắt đầu hợp đồng.');
+    }
+
+    if (terminatedDateObj > endOfDay(new Date())) {
+      throw new BadRequestException('Ngày chấm dứt không được là ngày trong tương lai.');
+    }
+
+    const terminatedContract = await this.prisma.$transaction(async (tx) => {
+      const updatedContract = await tx.contract.update({
+        where: { id },
+        data: {
+          status: 'TERMINATED',
+          terminatedAt: terminatedDateObj,
+          terminationReason: dto.reason ?? null,
+        },
+      });
+
+      const activeContractsCount = await tx.contract.count({
+        where: {
+          roomId: contract.roomId,
+          status: 'ACTIVE',
+          deletedAt: null,
+          id: { not: id },
+        },
+      });
+
+      if (activeContractsCount === 0 && contract.room.status === 'OCCUPIED') {
+        await tx.room.update({
+          where: { id: contract.roomId },
+          data: { status: 'AVAILABLE' },
+        });
+      }
+
+      await tx.auditLog.create({
+        data: {
+          userId,
+          action: AuditAction.CONTRACT_TERMINATED,
+          entity: 'Contract',
+          entityId: id,
+          metadata: {
+            contractId: id,
+            contractNumber: contract.contractNumber,
+            roomId: contract.roomId,
+            propertyId: contract.room.propertyId,
+            tenantId: contract.tenantId,
+            terminatedAt: terminatedDateObj.toISOString(),
+            terminationReason: dto.reason ?? null,
+            previousStatus: 'ACTIVE',
+            currentStatus: 'TERMINATED',
+          },
+        },
+      });
+
+      return updatedContract;
+    });
+
+    return {
+      message: 'Contract terminated successfully',
+      data: {
+        id: terminatedContract.id,
+        status: terminatedContract.status,
+        terminatedAt: terminatedContract.terminatedAt,
+        terminationReason: terminatedContract.terminationReason,
+      },
+    };
   }
 
   async getContracts(userId: string, query: GetContractsDto) {

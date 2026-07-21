@@ -3,6 +3,7 @@ import { ContractService } from './contract.service';
 import { GetContractsDto } from './dto/get-contracts.dto';
 import { CreateContractDto } from './dto/create-contract.dto';
 import { UpdateContractDto } from './dto/update-contract.dto';
+import { TerminateContractDto } from './dto/terminate-contract.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
@@ -43,5 +44,14 @@ export class ContractController {
   @Patch(':id/activate')
   async activateContract(@CurrentUser('id') userId: string, @Param('id') id: string) {
     return this.contractService.activateContract(userId, id);
+  }
+
+  @Patch(':id/terminate')
+  async terminateContract(
+    @CurrentUser('id') userId: string,
+    @Param('id') id: string,
+    @Body() dto: TerminateContractDto,
+  ) {
+    return this.contractService.terminateContract(userId, id, dto);
   }
 }

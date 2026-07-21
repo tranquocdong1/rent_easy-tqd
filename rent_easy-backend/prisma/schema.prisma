@@ -48,6 +48,7 @@ enum AuditAction {
   CONTRACT_UPDATED
   CONTRACT_DELETED
   CONTRACT_ACTIVATED
+  CONTRACT_TERMINATED
 }
 
 enum RefreshSessionRevokeReason {
@@ -208,6 +209,8 @@ model Contract {
   depositAmount  Decimal        @db.Decimal(12, 2)
   note           String?        @db.Text
   status         ContractStatus @default(PENDING)
+  terminatedAt   DateTime?
+  terminationReason String?     @db.Text
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
   deletedAt      DateTime?

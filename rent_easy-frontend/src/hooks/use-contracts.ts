@@ -61,3 +61,17 @@ export const useActivateContract = () => {
     },
   });
 };
+
+export const useTerminateContract = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: { terminatedDate: string; reason?: string } }) => 
+      ContractService.terminateContract(id, payload),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['contracts'] });
+      queryClient.invalidateQueries({ queryKey: ['contract', variables.id] });
+      queryClient.invalidateQueries({ queryKey: ['rooms'] });
+      queryClient.invalidateQueries({ queryKey: ['properties'] });
+    },
+  });
+};

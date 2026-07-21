@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { useContracts, useDeleteContract, useActivateContract } from "@/hooks/use-contracts";
+import { useContracts, useDeleteContract, useActivateContract, useTerminateContract } from "@/hooks/use-contracts";
 import { ContractStatus, ContractListItem } from "@/types/contract";
+import { format } from "date-fns";
 import {
   Table,
   TableBody,
@@ -55,6 +56,11 @@ export default function ContractsPage() {
   const [activateId, setActivateId] = useState<string | null>(null);
   const activateMutation = useActivateContract();
 
+  const [terminateId, setTerminateId] = useState<string | null>(null);
+  const [terminateDate, setTerminateDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [terminateReason, setTerminateReason] = useState("");
+  const terminateMutation = useTerminateContract();
+
   const { data, isLoading, isError } = useContracts({
     page,
     limit,
@@ -91,6 +97,26 @@ export default function ContractsPage() {
         toast.error("Đã xảy ra lỗi khi kích hoạt hợp đồng.");
       }
       setActivateId(null);
+    }
+  };
+
+  const handleTerminate = async () => {
+    if (!terminateId) return;
+    try {
+      await terminateMutation.mutateAsync({
+        id: terminateId,
+        payload: { terminatedDate: terminateDate, reason: terminateReason }
+      });
+      toast.success("Contract terminated successfully");
+      setTerminateId(null);
+      setTerminateDate(format(new Date(), 'yyyy-MM-dd'));
+      setTerminateReason("");
+    } catch (error: any) {
+      if (error?.response?.data?.message) {
+        toast.error(error.response.data.message);
+      } else {
+        toast.error("Đã xảy ra lỗi khi chấm dứt hợp đồng.");
+      }
     }
   };
 
@@ -243,6 +269,18 @@ export default function ContractsPage() {
                         Kích hoạt
                       </button>
                     )}
+                    {contract.status === ContractStatus.ACTIVE && (
+                      <button
+                        onClick={() => {
+                          setTerminateId(contract.id);
+                          setTerminateDate(format(new Date(), 'yyyy-MM-dd'));
+                          setTerminateReason("");
+                        }}
+                        className="text-orange-600 hover:underline text-sm font-medium cursor-pointer"
+                      >
+                        Chấm dứt
+                      </button>
+                    )}
                     <Link
                       href={`/dashboard/contracts/${contract.id}/edit`}
                       className="text-blue-600 hover:underline text-sm font-medium"
@@ -339,6 +377,60 @@ export default function ContractsPage() {
             >
               {activateMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
               Kích hoạt
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={!!terminateId} onOpenChange={(open) => !open && setTerminateId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Xác nhận chấm dứt hợp đồng</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-4 pt-4 text-sm text-slate-700">
+                <p>
+                  Bạn có chắc chắn muốn kết thúc hợp đồng này sớm?
+                  <br />
+                  • Hợp đồng sẽ chuyển sang <b>TERMINATED</b>
+                  <br />
+                  • Phòng sẽ chuyển sang <b>AVAILABLE</b> (nếu không có hợp đồng active khác)
+                  <br />
+                  • Không thể khôi phục trạng thái ACTIVE bằng chức năng này.
+                </p>
+                <div className="space-y-2">
+                  <label className="font-medium text-black">Ngày chấm dứt *</label>
+                  <Input 
+                    type="date" 
+                    value={terminateDate} 
+                    onChange={(e) => setTerminateDate(e.target.value)} 
+                    disabled={terminateMutation.isPending}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="font-medium text-black">Lý do chấm dứt</label>
+                  <textarea 
+                    className="flex min-h-[80px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    placeholder="Nhập lý do..."
+                    value={terminateReason}
+                    onChange={(e) => setTerminateReason(e.target.value)}
+                    disabled={terminateMutation.isPending}
+                  />
+                </div>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={terminateMutation.isPending}>Hủy</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                handleTerminate();
+              }}
+              disabled={terminateMutation.isPending || !terminateDate}
+              className="bg-orange-600 hover:bg-orange-700"
+            >
+              {terminateMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Chấm dứt
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
