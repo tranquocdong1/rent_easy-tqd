@@ -1,13 +1,23 @@
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
-import { getInvoices } from '@/services/api/invoices';
+import { getInvoices, deleteInvoice } from '@/services/api/invoices';
 import { InvoiceQuery, InvoiceStatus } from '@/types/invoice';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from '@/components/ui/alert-dialog';
 import Link from 'next/link';
 
 function InvoiceBadge({ status }: { status: InvoiceStatus }) {
@@ -46,7 +56,10 @@ function InvoicesPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const pathname = usePathname();
+  const queryClient = useQueryClient();
 
+  const [deleteDialogId, setDeleteDialogId] = useState<string | null>(null);
+  
   const [query, setQuery] = useState<InvoiceQuery>({
     page: searchParams.get('page') ? Number(searchParams.get('page')) : 1,
     limit: searchParams.get('limit') ? Number(searchParams.get('limit')) : 10,
@@ -76,6 +89,21 @@ function InvoicesPageContent() {
   const { data, isLoading, error } = useQuery({
     queryKey: ['invoices', query],
     queryFn: () => getInvoices(query),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => deleteInvoice(id),
+    onSuccess: (_, deletedId) => {
+      alert('Xóa hóa đơn thành công!');
+      queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      queryClient.invalidateQueries({ queryKey: ['invoice', deletedId] });
+      setDeleteDialogId(null);
+    },
+    onError: (error: any) => {
+      const msg = error.response?.data?.message || 'Có lỗi xảy ra khi xóa hóa đơn';
+      alert(msg);
+      setDeleteDialogId(null);
+    },
   });
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -217,6 +245,14 @@ function InvoicesPageContent() {
                     <InvoiceBadge status={invoice.status} />
                   </td>
                   <td className="px-4 py-3 text-right space-x-4">
+                    {invoice.status === 'UNPAID' && (
+                      <button 
+                        className="text-red-600 hover:underline"
+                        onClick={() => setDeleteDialogId(invoice.id)}
+                      >
+                        Xóa
+                      </button>
+                    )}
                     <Link href={`/dashboard/invoices/${invoice.id}/edit`} className="text-amber-600 hover:underline">
                       Sửa
                     </Link>
@@ -257,6 +293,26 @@ function InvoicesPageContent() {
           </div>
         </div>
       )}
+
+      <AlertDialog open={!!deleteDialogId} onOpenChange={(isOpen) => !isOpen && setDeleteDialogId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Xác nhận xóa hóa đơn</AlertDialogTitle>
+            <AlertDialogDescription>
+              Bạn có chắc chắn muốn xóa hóa đơn này? Hóa đơn sẽ được xóa mềm và không còn hiển thị trong danh sách.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setDeleteDialogId(null)}>Hủy</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={() => deleteDialogId && deleteMutation.mutate(deleteDialogId)}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {deleteMutation.isPending ? 'Đang xóa...' : 'Xóa Hóa Đơn'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

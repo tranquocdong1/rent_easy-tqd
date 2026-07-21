@@ -20,3 +20,8 @@ export const updateInvoice = async (id: string, payload: UpdateInvoiceRequest): 
   const { data } = await axiosInstance.patch<InvoiceDetailResponse>(`/v1/invoices/${id}`, payload);
   return data;
 };
+
+export const deleteInvoice = async (id: string): Promise<{ message: string; data: null }> => {
+  const { data } = await axiosInstance.delete<{ message: string; data: null }>(`/v1/invoices/${id}`);
+  return data;
+};

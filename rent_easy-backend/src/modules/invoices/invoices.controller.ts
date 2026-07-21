@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Param, Body, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Param, Body, Query, UseGuards } from '@nestjs/common';
 import { InvoicesService } from './invoices.service';
 import { InvoiceQueryDto } from './dto/invoice-query.dto';
 import { CreateInvoiceDto } from './dto/create-invoice.dto';
@@ -33,5 +33,10 @@ export class InvoicesController {
   @Patch(':id')
   update(@CurrentUser('id') ownerId: string, @Param('id') id: string, @Body() dto: UpdateInvoiceDto) {
     return this.invoicesService.update(ownerId, id, dto);
+  }
+
+  @Delete(':id')
+  remove(@CurrentUser('id') ownerId: string, @Param('id') id: string) {
+    return this.invoicesService.remove(ownerId, id);
   }
 }

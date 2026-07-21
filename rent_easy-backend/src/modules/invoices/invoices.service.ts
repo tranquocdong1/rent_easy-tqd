@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, NotFoundException, ConflictException, InternalServerErrorException } from '@nestjs/common';
+import { Injectable, Inject, BadRequestException, NotFoundException, ConflictException, InternalServerErrorException } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { InvoiceQueryDto } from './dto/invoice-query.dto';
 import { CreateInvoiceDto } from './dto/create-invoice.dto';
@@ -6,10 +6,15 @@ import { UpdateInvoiceDto } from './dto/update-invoice.dto';
 import { InvoiceResponseDto } from './dto/invoice-response.dto';
 import { InvoiceDetailResponseDto } from './dto/invoice-detail-response.dto';
 import { Prisma, AuditAction, InvoiceStatus, ContractStatus, Invoice } from '@prisma/client';
+import { INVOICE_DELETION_POLICY, type InvoiceDeletionPolicy } from './policies/invoice-deletion.policy';
 
 @Injectable()
 export class InvoicesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Inject(INVOICE_DELETION_POLICY)
+    private readonly invoiceDeletionPolicy: InvoiceDeletionPolicy,
+  ) {}
 
   async findAll(ownerId: string, query: InvoiceQueryDto) {
     const {
@@ -591,6 +596,91 @@ export class InvoicesService {
     return {
       message: 'Invoice updated successfully',
       data: InvoiceDetailResponseDto.fromEntity(result),
+    };
+  }
+
+  async remove(ownerId: string, id: string) {
+    // 1. Load Invoice & Validate Ownership & Check Soft Delete
+    const invoice = await this.prisma.invoice.findFirst({
+      where: {
+        id,
+        deletedAt: null,
+        contract: {
+          deletedAt: null,
+        },
+      },
+      include: {
+        contract: {
+          include: {
+            room: {
+              include: {
+                property: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!invoice || invoice.contract.room.property.ownerId !== ownerId) {
+      throw new NotFoundException({
+        message: 'Không tìm thấy hóa đơn hoặc bạn không có quyền truy cập.',
+        code: 'INVOICE_NOT_FOUND',
+      });
+    }
+
+    // 2. Validate Status
+    if (invoice.status !== InvoiceStatus.UNPAID) {
+      throw new ConflictException({
+        message: 'Không thể xóa hóa đơn ở trạng thái hiện tại (Chỉ có thể xóa hóa đơn Chưa thanh toán).',
+        code: 'INVOICE_CANNOT_DELETE',
+      });
+    }
+
+    // 3. Payment Dependency Check
+    const canDelete = await this.invoiceDeletionPolicy.canDelete(id);
+    if (!canDelete) {
+      throw new ConflictException({
+        message: 'Không thể xóa hóa đơn do có ràng buộc thanh toán.',
+        code: 'INVOICE_CANNOT_DELETE',
+      });
+    }
+
+    // 4. Transaction: Soft Delete + Audit Log
+    await this.prisma.$transaction(async (tx) => {
+      const deletedAt = new Date();
+      
+      await tx.invoice.update({
+        where: { id },
+        data: { deletedAt },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          userId: ownerId,
+          action: AuditAction.INVOICE_DELETED,
+          entity: 'Invoice',
+          entityId: invoice.id,
+          metadata: {
+            invoiceId: invoice.id,
+            invoiceNumber: invoice.invoiceNumber,
+            contractId: invoice.contractId,
+            tenantId: invoice.contract.tenantId,
+            roomId: invoice.contract.roomId,
+            propertyId: invoice.contract.room.propertyId,
+            billingMonth: invoice.billingMonth,
+            billingYear: invoice.billingYear,
+            totalAmount: Number(invoice.totalAmount),
+            status: invoice.status,
+            deletedAt: deletedAt.toISOString(),
+          },
+        },
+      });
+    });
+
+    return {
+      message: 'Invoice deleted successfully',
+      data: null,
     };
   }
 }
