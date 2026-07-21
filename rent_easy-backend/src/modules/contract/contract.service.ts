@@ -531,6 +531,98 @@ export class ContractService {
     };
   }
 
+  async processExpireContract(contractId: string) {
+    const contract = await this.prisma.contract.findFirst({
+      where: {
+        id: contractId,
+        deletedAt: null,
+      },
+      include: {
+        room: {
+          include: {
+            property: true,
+          },
+        },
+      },
+    });
+
+    if (!contract || contract.status !== 'ACTIVE') {
+      return;
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.contract.update({
+        where: { id: contractId },
+        data: { status: 'EXPIRED' },
+      });
+
+      const activeContractsCount = await tx.contract.count({
+        where: {
+          roomId: contract.roomId,
+          status: 'ACTIVE',
+          deletedAt: null,
+          id: { not: contractId },
+        },
+      });
+
+      if (activeContractsCount === 0 && contract.room.status === 'OCCUPIED') {
+        await tx.room.update({
+          where: { id: contract.roomId },
+          data: { status: 'AVAILABLE' },
+        });
+      }
+
+      await tx.auditLog.create({
+        data: {
+          userId: contract.room.property.ownerId,
+          action: AuditAction.CONTRACT_EXPIRED,
+          entity: 'Contract',
+          entityId: contractId,
+          metadata: {
+            contractId,
+            contractNumber: contract.contractNumber,
+            roomId: contract.roomId,
+            propertyId: contract.room.propertyId,
+            tenantId: contract.tenantId,
+            expiredAt: new Date().toISOString(),
+            previousStatus: 'ACTIVE',
+            currentStatus: 'EXPIRED',
+          },
+        },
+      });
+    });
+  }
+
+  async expireContracts() {
+    const todayStart = startOfDay(new Date());
+
+    const expiredContracts = await this.prisma.contract.findMany({
+      where: {
+        status: 'ACTIVE',
+        deletedAt: null,
+        endDate: {
+          lt: todayStart,
+        },
+      },
+      select: { id: true },
+    });
+
+    let processed = 0;
+    let failed = 0;
+
+    for (const contract of expiredContracts) {
+      try {
+        await this.processExpireContract(contract.id);
+        processed++;
+      } catch (error) {
+        console.error(`Failed to expire contract ${contract.id}:`, error);
+        failed++;
+      }
+    }
+
+    return { processed, failed };
+  }
+
   async getContracts(userId: string, query: GetContractsDto) {
     const {
       page = 1,

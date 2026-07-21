@@ -22,6 +22,15 @@ export class ContractController {
     return this.contractService.createContract(userId, body);
   }
 
+  @Post('expire')
+  async expireContracts() {
+    const result = await this.contractService.expireContracts();
+    return {
+      message: 'Contracts expired successfully',
+      data: result,
+    };
+  }
+
   @Get(':id')
   async getContractDetail(@CurrentUser('id') userId: string, @Param('id') id: string) {
     return this.contractService.getContractDetail(userId, id);
