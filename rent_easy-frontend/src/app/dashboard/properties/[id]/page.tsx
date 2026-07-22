@@ -1,13 +1,23 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useParams, useRouter, notFound } from 'next/navigation';
-import Link from 'next/link';
-import { propertiesApi } from '@/services/api/properties';
-import { PropertyDetail } from '@/types/property';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { formatPropertyType } from '@/lib/utils';
+import { useState, useEffect } from "react";
+import { useParams, useRouter, notFound } from "next/navigation";
+import Link from "next/link";
+import { propertiesApi } from "@/services/api/properties";
+import { PropertyDetail } from "@/types/property";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { formatPropertyType } from "@/lib/utils";
+import {
+  Building2,
+  ArrowLeft,
+  Pencil,
+  DoorOpen,
+  CheckCircle2,
+  MapPin,
+  FileText,
+  Home,
+} from "lucide-react";
 
 export default function PropertyDetailPage() {
   const params = useParams();
@@ -28,7 +38,7 @@ export default function PropertyDetailPage() {
         if (error.response?.status === 404) {
           notFound();
         } else {
-          console.error('Failed to load property details:', error);
+          console.error("Failed to load property details:", error);
         }
       } finally {
         setLoading(false);
@@ -39,85 +49,177 @@ export default function PropertyDetailPage() {
   }, [propertyId]);
 
   if (loading) {
-    return <div className="p-6 text-center text-muted-foreground">Đang tải thông tin...</div>;
+    return (
+      <div className="space-y-6 max-w-5xl mx-auto pb-12">
+        <Skeleton className="h-24 w-full rounded-2xl" />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <Skeleton className="lg:col-span-2 h-80 rounded-2xl" />
+          <Skeleton className="h-80 rounded-2xl" />
+        </div>
+      </div>
+    );
   }
 
   if (!property) {
-    return null; // fallback or handled by notFound
+    return null;
   }
 
   const { statistics } = property;
 
   return (
-    <div className="p-6 max-w-5xl mx-auto space-y-6">
-      <div className="flex justify-between items-center">
-        <div className="flex items-center space-x-4">
-          <Button variant="outline" onClick={() => router.back()}>
+    <div className="space-y-6 pb-12 max-w-5xl mx-auto">
+      {/* 1. Header Banner */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200/90 shadow-2xs">
+        <div className="flex items-center gap-3">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => router.back()}
+            className="rounded-xl border-slate-300 text-slate-800 font-bold hover:bg-slate-100 h-10 px-3.5 gap-1.5"
+          >
+            <ArrowLeft className="h-4 w-4" />
             Quay lại
           </Button>
-          <h1 className="text-3xl font-bold tracking-tight">{property.name}</h1>
+          <div>
+            <div className="flex items-center gap-3">
+              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">
+                {property.name}
+              </h1>
+              {property.status === "ACTIVE" ? (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200/80">
+                  <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                  Đang hoạt động
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200">
+                  Ngừng hoạt động
+                </span>
+              )}
+            </div>
+            <p className="text-sm text-slate-500 font-medium mt-1 flex items-center gap-1.5">
+              <MapPin className="h-4 w-4 text-slate-400 shrink-0" />
+              {property.address}
+            </p>
+          </div>
         </div>
-        <div className="flex space-x-2">
-          <Link href={`/dashboard/properties/${property.id}/edit`} passHref>
-            <Button variant="secondary">Sửa Property</Button>
-          </Link>
+
+        <div className="flex items-center gap-2 self-start sm:self-auto">
+          <Button
+            asChild
+            className="rounded-xl bg-slate-900 hover:bg-black text-white font-bold text-sm h-10 px-4 gap-2 shadow-xs"
+          >
+            <Link href={`/dashboard/properties/${property.id}/edit`}>
+              <Pencil className="h-4 w-4" />
+              Chỉnh sửa
+            </Link>
+          </Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="md:col-span-2">
-          <CardHeader>
-            <CardTitle className="text-xl font-semibold">Thông tin cơ bản</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-sm text-muted-foreground">Loại hình</p>
-                <p className="font-medium">{formatPropertyType(property.propertyType)}</p>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Trạng thái</p>
-                <p>
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${property.status === 'ACTIVE' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}`}>
-                    {property.status === 'ACTIVE' ? 'Đang hoạt động' : property.status === 'INACTIVE' ? 'Ngừng hoạt động' : property.status}
-                  </span>
-                </p>
-              </div>
-            </div>
-            
-            <div>
-              <p className="text-sm text-muted-foreground">Địa chỉ</p>
-              <p className="font-medium">{property.address}</p>
-            </div>
-            
-            <div>
-              <p className="text-sm text-muted-foreground">Mô tả</p>
-              <p className="font-medium whitespace-pre-wrap">
-                {property.description || 'Chưa có mô tả'}
+      {/* 2. Main Content Grid (Details on Left 2-Cols, Stats on Right 1-Col) */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+        {/* Left Column: Basic Info Card */}
+        <div className="lg:col-span-2 bg-white rounded-2xl p-6 sm:p-8 border border-slate-200/90 shadow-2xs space-y-6">
+          <div className="flex items-center gap-2 border-b border-slate-100 pb-4">
+            <Building2 className="h-6 w-6 text-slate-900" />
+            <h2 className="text-xl font-bold text-slate-900">Thông tin chi tiết Bất động sản</h2>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 space-y-1">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                Loại hình bất động sản
+              </span>
+              <p className="text-base font-bold text-slate-900">
+                {formatPropertyType(property.propertyType)}
               </p>
             </div>
-          </CardContent>
-        </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-xl font-semibold">Thống kê Phòng</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex justify-between items-center">
-              <p className="text-sm font-medium">Tổng số phòng</p>
-              <p className="text-lg font-bold">{statistics?.totalRooms || 0}</p>
+            <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 space-y-1">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                Trạng thái khai thác
+              </span>
+              <p className="text-base font-bold text-slate-900">
+                {property.status === "ACTIVE" ? "Đang hoạt động" : "Ngừng hoạt động"}
+              </p>
             </div>
-            <div className="flex justify-between items-center text-green-600">
-              <p className="text-sm font-medium">Đang trống</p>
-              <p className="text-lg font-bold">{statistics?.availableRooms || 0}</p>
+          </div>
+
+          <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 space-y-1">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+              Địa chỉ đầy đủ
+            </span>
+            <p className="text-base font-semibold text-slate-900 leading-relaxed">
+              {property.address}
+            </p>
+          </div>
+
+          <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 space-y-1">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+              Mô tả thêm / Ghi chú
+            </span>
+            <p className="text-sm font-medium text-slate-700 leading-relaxed whitespace-pre-wrap">
+              {property.description || "Chưa có ghi chú chi tiết cho bất động sản này."}
+            </p>
+          </div>
+
+          <div className="pt-2 flex items-center justify-between text-xs font-medium text-slate-500 border-t border-slate-100">
+            <span>Ngày tạo: {new Date(property.createdAt).toLocaleDateString("vi-VN")}</span>
+            <span>Cập nhật lần cuối: {new Date(property.updatedAt).toLocaleDateString("vi-VN")}</span>
+          </div>
+        </div>
+
+        {/* Right Column: Room Stats Widget Card */}
+        <div className="bg-white rounded-2xl p-6 border border-slate-200/90 shadow-2xs space-y-5">
+          <div className="flex items-center gap-2 border-b border-slate-100 pb-4">
+            <Home className="h-5 w-5 text-slate-900" />
+            <h2 className="text-lg font-bold text-slate-900">Thống kê phòng trọ</h2>
+          </div>
+
+          <div className="space-y-4">
+            <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between">
+              <div>
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                  Tổng số phòng
+                </span>
+                <p className="text-2xl font-black text-slate-900 mt-0.5">
+                  {statistics?.totalRooms || 0}
+                </p>
+              </div>
+              <div className="p-2.5 rounded-xl bg-slate-200/60 text-slate-800">
+                <DoorOpen className="h-5 w-5" />
+              </div>
             </div>
-            <div className="flex justify-between items-center text-blue-600">
-              <p className="text-sm font-medium">Đang cho thuê</p>
-              <p className="text-lg font-bold">{statistics?.occupiedRooms || 0}</p>
+
+            <div className="p-4 rounded-xl bg-emerald-50/70 border border-emerald-200/80 flex items-center justify-between">
+              <div>
+                <span className="text-xs font-bold uppercase tracking-wider text-emerald-800">
+                  Đã cho thuê
+                </span>
+                <p className="text-2xl font-black text-emerald-700 mt-0.5">
+                  {statistics?.occupiedRooms || 0}
+                </p>
+              </div>
+              <div className="p-2.5 rounded-xl bg-emerald-100 text-emerald-700">
+                <CheckCircle2 className="h-5 w-5" />
+              </div>
             </div>
-          </CardContent>
-        </Card>
+
+            <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between">
+              <div>
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                  Phòng còn trống
+                </span>
+                <p className="text-2xl font-black text-slate-800 mt-0.5">
+                  {statistics?.availableRooms || 0}
+                </p>
+              </div>
+              <div className="p-2.5 rounded-xl bg-slate-200/60 text-slate-700">
+                <Home className="h-5 w-5" />
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -5,12 +5,26 @@ import { useParams, useRouter } from "next/navigation";
 import { tenantsApi } from "@/services/api/tenant";
 import { TenantDetail } from "@/types/tenant";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { TenantContracts } from "./components/tenant-contracts";
 import { TenantInvoices } from "./components/tenant-invoices";
 import { formatGender } from "@/lib/utils";
 import Link from "next/link";
-import { ArrowLeft, Edit, User, Phone, Mail, CreditCard, Home, Clock } from "lucide-react";
+import {
+  ArrowLeft,
+  Pencil,
+  User,
+  Phone,
+  Mail,
+  CreditCard,
+  Calendar,
+  MapPin,
+  FileText,
+  Receipt,
+  AlertCircle,
+  Clock,
+  ShieldCheck,
+} from "lucide-react";
 
 export default function TenantDetailPage() {
   const params = useParams();
@@ -38,219 +52,291 @@ export default function TenantDetailPage() {
         setLoading(false);
       }
     };
-    
+
     if (tenantId) fetchTenant();
   }, [tenantId]);
 
   if (loading) {
     return (
-      <div className="container mx-auto py-8 px-4 max-w-4xl space-y-6">
-        <div className="h-8 w-32 bg-slate-200 animate-pulse rounded"></div>
-        <div className="h-32 w-full bg-slate-200 animate-pulse rounded-lg"></div>
-        <div className="h-8 w-64 bg-slate-200 animate-pulse rounded"></div>
-        <div className="h-64 w-full bg-slate-200 animate-pulse rounded-lg"></div>
+      <div className="space-y-6 max-w-5xl mx-auto pb-12">
+        <Skeleton className="h-24 w-full rounded-2xl" />
+        <Skeleton className="h-40 w-full rounded-2xl" />
+        <Skeleton className="h-80 w-full rounded-2xl" />
       </div>
     );
   }
 
   if (error === "TENANT_NOT_FOUND" || !tenant) {
     return (
-      <div className="container mx-auto py-16 px-4 text-center max-w-lg">
-        <div className="bg-slate-100 dark:bg-slate-800 p-8 rounded-lg shadow-sm">
-          <User className="w-16 h-16 mx-auto text-slate-400 mb-4" />
-          <h2 className="text-2xl font-bold mb-2">Không tìm thấy người thuê</h2>
-          <p className="text-slate-500 mb-6">Người thuê này có thể đã bị xóa hoặc không tồn tại.</p>
-          <Button onClick={() => router.push("/dashboard/tenants")}>
-            Quay lại danh sách
-          </Button>
+      <div className="bg-white rounded-2xl p-12 border border-slate-200/90 shadow-2xs max-w-xl mx-auto text-center space-y-4 my-8">
+        <div className="h-16 w-16 rounded-2xl bg-slate-100 text-slate-700 flex items-center justify-center mx-auto border border-slate-200">
+          <AlertCircle className="h-8 w-8 text-amber-600" />
         </div>
+        <h2 className="text-2xl font-bold text-slate-900">Không tìm thấy khách thuê</h2>
+        <p className="text-sm text-slate-500 font-medium max-w-md mx-auto">
+          Hồ sơ khách thuê này có thể đã bị xóa hoặc không tồn tại trên hệ thống.
+        </p>
+        <Button
+          onClick={() => router.push("/dashboard/tenants")}
+          className="rounded-xl bg-slate-900 hover:bg-black text-white font-bold text-sm px-6 h-10"
+        >
+          Quay lại danh sách
+        </Button>
       </div>
     );
   }
 
-  // Get initials for avatar
   const initials = tenant.fullName
-    .split(' ')
+    .split(" ")
     .map((n) => n[0])
     .slice(0, 2)
-    .join('')
+    .join("")
     .toUpperCase();
 
   return (
-    <div className="container mx-auto py-8 px-4 max-w-5xl">
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center space-x-4">
-          <Button variant="outline" size="icon" onClick={() => router.push("/dashboard/tenants")}>
-            <ArrowLeft className="w-4 h-4" />
+    <div className="space-y-6 pb-12 max-w-5xl mx-auto">
+      {/* 1. Header Banner */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200/90 shadow-2xs">
+        <div className="flex items-center gap-3">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => router.push("/dashboard/tenants")}
+            className="rounded-xl border-slate-300 text-slate-800 font-bold hover:bg-slate-100 h-10 px-3.5 gap-1.5"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Quay lại
           </Button>
-          <h1 className="text-2xl font-bold">Chi tiết người thuê</h1>
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
+              Chi tiết Hồ sơ Khách thuê
+            </h1>
+            <p className="text-sm text-slate-500 font-medium mt-0.5">
+              Thông tin định danh, hợp đồng thuê và lịch sử thanh toán
+            </p>
+          </div>
         </div>
-        <Link href={`/dashboard/tenants/${tenant.id}/edit`}>
-          <Button className="flex items-center gap-2">
-            <Edit className="w-4 h-4" />
+
+        <Button
+          asChild
+          className="rounded-xl bg-slate-900 hover:bg-black text-white font-bold text-sm h-10 px-4 gap-2 shadow-xs self-start sm:self-auto"
+        >
+          <Link href={`/dashboard/tenants/${tenant.id}/edit`}>
+            <Pencil className="h-4 w-4" />
             Sửa thông tin
-          </Button>
-        </Link>
+          </Link>
+        </Button>
       </div>
 
-      {/* Hero Card */}
-      <Card className="mb-8">
-        <CardContent className="p-6">
-          <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
-            <div className="h-20 w-20 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-2xl font-bold shrink-0">
-              {initials}
-            </div>
-            <div className="flex-1">
-              <h2 className="text-2xl font-bold">{tenant.fullName}</h2>
-              <div className="flex flex-wrap gap-x-6 gap-y-2 mt-2 text-slate-600 dark:text-slate-400">
-                <div className="flex items-center gap-2">
-                  <CreditCard className="w-4 h-4" />
-                  <span>{tenant.identityNumber}</span>
-                </div>
-                {tenant.phone && (
-                  <div className="flex items-center gap-2">
-                    <Phone className="w-4 h-4" />
-                    <span>{tenant.phone}</span>
-                  </div>
-                )}
-                {tenant.email && (
-                  <div className="flex items-center gap-2">
-                    <Mail className="w-4 h-4" />
-                    <span>{tenant.email}</span>
-                  </div>
-                )}
-              </div>
-            </div>
-            
-            {/* Stats Summary */}
-            <div className="flex gap-4 mt-4 md:mt-0 border-t md:border-t-0 md:border-l pt-4 md:pt-0 md:pl-6 border-slate-200">
-              <div 
-                className="text-center cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 p-2 rounded-lg transition-colors"
-                onClick={() => setActiveTab("contracts")}
-              >
-                <div className="text-2xl font-bold text-primary">{tenant.statistics?.activeContracts || 0}</div>
-                <div className="text-xs text-slate-500">Hợp đồng đang thuê</div>
-              </div>
-              <div 
-                className="text-center cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 p-2 rounded-lg transition-colors"
-                onClick={() => setActiveTab("payments")}
-              >
-                <div className="text-2xl font-bold text-red-500">{tenant.paymentStats?.unpaidInvoices || 0}</div>
-                <div className="text-xs text-slate-500">Hóa đơn chưa thanh toán</div>
-              </div>
+      {/* 2. Hero Card */}
+      <div className="bg-white rounded-2xl p-6 sm:p-8 border border-slate-200/90 shadow-2xs flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+        <div className="flex items-center gap-5">
+          <div className="h-20 w-20 rounded-2xl bg-slate-900 text-white flex items-center justify-center text-2xl font-black shrink-0 shadow-md">
+            {initials}
+          </div>
+          <div className="space-y-1">
+            <h2 className="text-2xl font-black text-slate-900">{tenant.fullName}</h2>
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-sm font-semibold text-slate-600 pt-1">
+              <span className="flex items-center gap-1.5 bg-slate-100 px-3 py-1 rounded-md text-slate-900 border border-slate-200/60">
+                <CreditCard className="h-4 w-4 text-slate-600" />
+                CCCD: {tenant.identityNumber}
+              </span>
+              {tenant.phone && (
+                <span className="flex items-center gap-1.5">
+                  <Phone className="h-4 w-4 text-slate-500" />
+                  {tenant.phone}
+                </span>
+              )}
+              {tenant.email && (
+                <span className="flex items-center gap-1.5">
+                  <Mail className="h-4 w-4 text-slate-500" />
+                  {tenant.email}
+                </span>
+              )}
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
 
-      {/* Tabs */}
-      <div className="flex border-b border-slate-200 mb-6">
+        {/* Stats Summary Widget */}
+        <div className="flex items-center gap-4 w-full md:w-auto pt-4 md:pt-0 border-t md:border-t-0 md:border-l border-slate-100 md:pl-6">
+          <div
+            className="flex-1 md:flex-none text-center cursor-pointer p-3 rounded-xl bg-slate-50 border border-slate-100 hover:border-slate-300 transition-colors"
+            onClick={() => setActiveTab("contracts")}
+          >
+            <div className="text-2xl font-black text-slate-900">
+              {tenant.statistics?.activeContracts || 0}
+            </div>
+            <div className="text-xs font-semibold text-slate-500 mt-0.5">Hợp đồng đang thuê</div>
+          </div>
+          <div
+            className="flex-1 md:flex-none text-center cursor-pointer p-3 rounded-xl bg-red-50/70 border border-red-200/80 hover:border-red-300 transition-colors"
+            onClick={() => setActiveTab("payments")}
+          >
+            <div className="text-2xl font-black text-red-700">
+              {tenant.paymentStats?.unpaidInvoices || 0}
+            </div>
+            <div className="text-xs font-semibold text-red-800 mt-0.5">Hóa đơn chưa thu</div>
+          </div>
+        </div>
+      </div>
+
+      {/* 3. Navigation Tabs */}
+      <div className="flex items-center gap-2 p-1.5 bg-slate-100/80 rounded-2xl border border-slate-200/60 max-w-fit">
         <button
-          className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
-            activeTab === "info"
-              ? "border-primary text-primary"
-              : "border-transparent text-slate-500 hover:text-slate-700"
-          }`}
           onClick={() => setActiveTab("info")}
+          className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-all ${
+            activeTab === "info"
+              ? "bg-slate-900 text-white shadow-xs"
+              : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/60"
+          }`}
         >
           Thông tin cá nhân
         </button>
         <button
-          className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
-            activeTab === "contracts"
-              ? "border-primary text-primary"
-              : "border-transparent text-slate-500 hover:text-slate-700"
-          }`}
           onClick={() => setActiveTab("contracts")}
+          className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${
+            activeTab === "contracts"
+              ? "bg-slate-900 text-white shadow-xs"
+              : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/60"
+          }`}
         >
+          <FileText className="h-4 w-4" />
           Hợp đồng & Phòng
         </button>
         <button
-          className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
-            activeTab === "payments"
-              ? "border-primary text-primary"
-              : "border-transparent text-slate-500 hover:text-slate-700"
-          }`}
           onClick={() => setActiveTab("payments")}
+          className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${
+            activeTab === "payments"
+              ? "bg-slate-900 text-white shadow-xs"
+              : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/60"
+          }`}
         >
+          <Receipt className="h-4 w-4" />
           Lịch sử thanh toán
         </button>
       </div>
 
-      {/* Tab Content */}
+      {/* 4. Tab Content */}
       <div className="min-h-[300px]">
         {activeTab === "info" && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Chi tiết định danh</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <div className="text-sm text-slate-500">Giới tính</div>
-                  <div className="font-medium">{formatGender(tenant.gender)}</div>
-                </div>
-                <div>
-                  <div className="text-sm text-slate-500">Ngày sinh</div>
-                  <div className="font-medium">
-                    {tenant.dateOfBirth ? new Date(tenant.dateOfBirth).toLocaleDateString("vi-VN") : "-"}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-sm text-slate-500">CCCD/CMND</div>
-                  <div className="font-medium">{tenant.identityNumber}</div>
-                </div>
-                <div>
-                  <div className="text-sm text-slate-500">Ngày cấp</div>
-                  <div className="font-medium">
-                    {tenant.identityIssuedDate ? new Date(tenant.identityIssuedDate).toLocaleDateString("vi-VN") : "-"}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-sm text-slate-500">Nơi cấp</div>
-                  <div className="font-medium">{tenant.identityIssuedPlace || "-"}</div>
-                </div>
-              </CardContent>
-            </Card>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Identity Card */}
+            <div className="bg-white rounded-2xl p-6 sm:p-8 border border-slate-200/90 shadow-2xs space-y-5">
+              <div className="flex items-center gap-2 border-b border-slate-100 pb-4">
+                <ShieldCheck className="h-5.5 w-5.5 text-slate-900" />
+                <h3 className="text-lg font-bold text-slate-900">Chi tiết thông tin định danh</h3>
+              </div>
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Thông tin liên hệ & Khác</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <div className="text-sm text-slate-500">Địa chỉ thường trú</div>
-                  <div className="font-medium">{tenant.permanentAddress || "-"}</div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 space-y-1">
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                    Giới tính
+                  </span>
+                  <p className="text-base font-bold text-slate-900">
+                    {formatGender(tenant.gender)}
+                  </p>
                 </div>
-                <div>
-                  <div className="text-sm text-slate-500">Số điện thoại</div>
-                  <div className="font-medium">{tenant.phone || "-"}</div>
+                <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 space-y-1">
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                    Ngày sinh
+                  </span>
+                  <p className="text-base font-bold text-slate-900">
+                    {tenant.dateOfBirth
+                      ? new Date(tenant.dateOfBirth).toLocaleDateString("vi-VN")
+                      : "-"}
+                  </p>
                 </div>
-                <div>
-                  <div className="text-sm text-slate-500">Email</div>
-                  <div className="font-medium">{tenant.email || "-"}</div>
+              </div>
+
+              <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 space-y-1">
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                  Số CCCD / CMND
+                </span>
+                <p className="text-lg font-extrabold text-slate-900">{tenant.identityNumber}</p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 space-y-1">
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                    Ngày cấp CCCD
+                  </span>
+                  <p className="text-base font-semibold text-slate-900">
+                    {tenant.identityIssuedDate
+                      ? new Date(tenant.identityIssuedDate).toLocaleDateString("vi-VN")
+                      : "-"}
+                  </p>
                 </div>
-                <div>
-                  <div className="text-sm text-slate-500">Ghi chú</div>
-                  <div className="font-medium whitespace-pre-wrap">{tenant.note || "-"}</div>
+                <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 space-y-1">
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                    Nơi cấp CCCD
+                  </span>
+                  <p className="text-base font-semibold text-slate-900 truncate">
+                    {tenant.identityIssuedPlace || "-"}
+                  </p>
                 </div>
-                <div>
-                  <div className="text-sm text-slate-500">Ngày tạo hồ sơ</div>
-                  <div className="font-medium">
-                    {new Date(tenant.createdAt).toLocaleDateString("vi-VN")} lúc {new Date(tenant.createdAt).toLocaleTimeString("vi-VN")}
-                  </div>
+              </div>
+            </div>
+
+            {/* Contact & Extra Info Card */}
+            <div className="bg-white rounded-2xl p-6 sm:p-8 border border-slate-200/90 shadow-2xs space-y-5">
+              <div className="flex items-center gap-2 border-b border-slate-100 pb-4">
+                <Phone className="h-5.5 w-5.5 text-slate-900" />
+                <h3 className="text-lg font-bold text-slate-900">Thông tin liên hệ & Khác</h3>
+              </div>
+
+              <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 space-y-1">
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                  Địa chỉ thường trú
+                </span>
+                <p className="text-base font-semibold text-slate-900 leading-relaxed">
+                  {tenant.permanentAddress || "-"}
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 space-y-1">
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                    Số điện thoại
+                  </span>
+                  <p className="text-base font-bold text-slate-900">{tenant.phone || "-"}</p>
                 </div>
-              </CardContent>
-            </Card>
+                <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 space-y-1">
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                    Địa chỉ Email
+                  </span>
+                  <p className="text-base font-semibold text-slate-900 truncate">
+                    {tenant.email || "-"}
+                  </p>
+                </div>
+              </div>
+
+              <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 space-y-1">
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                  Ghi chú chi tiết
+                </span>
+                <p className="text-sm font-medium text-slate-700 leading-relaxed whitespace-pre-wrap">
+                  {tenant.note || "Không có ghi chú thêm."}
+                </p>
+              </div>
+
+              <div className="pt-2 text-xs font-medium text-slate-500 border-t border-slate-100 flex items-center justify-between">
+                <span>Hồ sơ tạo lúc: {new Date(tenant.createdAt).toLocaleDateString("vi-VN")}</span>
+                <span>ID: {tenant.id.slice(0, 8)}...</span>
+              </div>
+            </div>
           </div>
         )}
 
         {activeTab === "contracts" && (
-          <TenantContracts tenantId={tenant.id} />
+          <div className="bg-white rounded-2xl p-6 border border-slate-200/90 shadow-2xs">
+            <TenantContracts tenantId={tenant.id} />
+          </div>
         )}
 
         {activeTab === "payments" && (
-          <TenantInvoices tenantId={tenant.id} />
+          <div className="bg-white rounded-2xl p-6 border border-slate-200/90 shadow-2xs">
+            <TenantInvoices tenantId={tenant.id} />
+          </div>
         )}
       </div>
     </div>

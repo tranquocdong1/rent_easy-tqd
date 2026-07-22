@@ -6,6 +6,7 @@ export const useContracts = (params?: GetContractsParams) => {
   return useQuery({
     queryKey: ['contracts', params],
     queryFn: () => ContractService.getContracts(params),
+    placeholderData: (previousData) => previousData,
   });
 };
 
