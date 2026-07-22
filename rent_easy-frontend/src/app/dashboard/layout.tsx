@@ -22,6 +22,18 @@ import {
   Sparkles,
 } from "lucide-react";
 
+interface NavItem {
+  name: string;
+  href: string;
+  icon: React.ComponentType<{ className?: string }>;
+  exact?: boolean;
+}
+
+interface NavSection {
+  title: string;
+  items: NavItem[];
+}
+
 export default function DashboardLayout({
   children,
 }: {
@@ -54,7 +66,7 @@ export default function DashboardLayout({
     return null;
   }
 
-  const navSections = [
+  const navSections: NavSection[] = [
     {
       title: "Tổng quan",
       items: [
