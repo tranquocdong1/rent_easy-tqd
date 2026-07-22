@@ -29,6 +29,7 @@ export class InvoicesService {
       propertyId,
       roomId,
       contractId,
+      tenantId,
       month,
       year,
       sortBy = 'createdAt',
@@ -78,9 +79,17 @@ export class InvoicesService {
       where.contractId = contractId;
     }
 
+    if (tenantId) {
+      const contractFilter = where.contract as Prisma.ContractWhereInput || {};
+      where.contract = {
+        ...contractFilter,
+        tenantId,
+      };
+    }
+
     if (roomId || propertyId) {
-      const contractFilter = where.contract as Prisma.ContractWhereInput;
-      const roomFilter = contractFilter.room as Prisma.RoomWhereInput;
+      const contractFilter = where.contract as Prisma.ContractWhereInput || {};
+      const roomFilter = contractFilter.room as Prisma.RoomWhereInput || {};
 
       where.contract = {
         ...contractFilter,

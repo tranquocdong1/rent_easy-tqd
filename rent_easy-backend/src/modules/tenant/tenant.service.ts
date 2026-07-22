@@ -147,14 +147,30 @@ export class TenantService {
     
     const { ownerId: _, deletedAt: __, ...tenantData } = tenant;
     
+    const [activeContracts, totalContracts, unpaidInvoices] = await Promise.all([
+      this.prisma.contract.count({
+        where: { tenantId, status: 'ACTIVE', deletedAt: null },
+      }),
+      this.prisma.contract.count({
+        where: { tenantId, deletedAt: null },
+      }),
+      this.prisma.invoice.count({
+        where: { 
+          contract: { tenantId, deletedAt: null }, 
+          status: { in: ['UNPAID', 'PARTIALLY_PAID', 'OVERDUE'] }, 
+          deletedAt: null 
+        },
+      })
+    ]);
+
     return {
       ...tenantData,
       statistics: {
-        activeContracts: 0,
-        totalContracts: 0,
+        activeContracts,
+        totalContracts,
       },
       paymentStats: {
-        unpaidInvoices: 0,
+        unpaidInvoices,
       },
     };
   }

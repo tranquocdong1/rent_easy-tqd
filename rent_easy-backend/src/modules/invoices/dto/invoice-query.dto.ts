@@ -30,6 +30,10 @@ export class InvoiceQueryDto extends PaginationDto {
   contractId?: string;
 
   @IsOptional()
+  @IsUUID()
+  tenantId?: string;
+
+  @IsOptional()
   @Type(() => Number)
   @IsNumber()
   @Min(1)

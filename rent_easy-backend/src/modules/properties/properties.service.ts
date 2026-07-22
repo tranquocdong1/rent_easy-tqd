@@ -13,7 +13,7 @@ export class PropertiesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly statisticsService: PropertyStatisticsService,
-  ) {}
+  ) { }
 
   async findAll(ownerId: string, query: PropertyQueryDto) {
     const {

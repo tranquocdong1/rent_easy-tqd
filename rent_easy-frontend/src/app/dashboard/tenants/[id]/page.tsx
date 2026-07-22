@@ -6,7 +6,8 @@ import { tenantsApi } from "@/services/api/tenant";
 import { TenantDetail } from "@/types/tenant";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ComingSoonCard } from "@/components/coming-soon-card";
+import { TenantContracts } from "./components/tenant-contracts";
+import { TenantInvoices } from "./components/tenant-invoices";
 import { formatGender } from "@/lib/utils";
 import Link from "next/link";
 import { ArrowLeft, Edit, User, Phone, Mail, CreditCard, Home, Clock } from "lucide-react";
@@ -123,11 +124,17 @@ export default function TenantDetailPage() {
             
             {/* Stats Summary */}
             <div className="flex gap-4 mt-4 md:mt-0 border-t md:border-t-0 md:border-l pt-4 md:pt-0 md:pl-6 border-slate-200">
-              <div className="text-center">
-                <div className="text-2xl font-bold">{tenant.statistics?.activeContracts || 0}</div>
+              <div 
+                className="text-center cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 p-2 rounded-lg transition-colors"
+                onClick={() => setActiveTab("contracts")}
+              >
+                <div className="text-2xl font-bold text-primary">{tenant.statistics?.activeContracts || 0}</div>
                 <div className="text-xs text-slate-500">Hợp đồng đang thuê</div>
               </div>
-              <div className="text-center">
+              <div 
+                className="text-center cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 p-2 rounded-lg transition-colors"
+                onClick={() => setActiveTab("payments")}
+              >
                 <div className="text-2xl font-bold text-red-500">{tenant.paymentStats?.unpaidInvoices || 0}</div>
                 <div className="text-xs text-slate-500">Hóa đơn chưa thanh toán</div>
               </div>
@@ -239,17 +246,11 @@ export default function TenantDetailPage() {
         )}
 
         {activeTab === "contracts" && (
-          <ComingSoonCard 
-            title="Module Contract" 
-            description="Lịch sử hợp đồng và thông tin phòng đang thuê sẽ được cập nhật và hiển thị ở đây sau khi hoàn thiện Module Contract." 
-          />
+          <TenantContracts tenantId={tenant.id} />
         )}
 
         {activeTab === "payments" && (
-          <ComingSoonCard 
-            title="Module Invoice" 
-            description="Lịch sử thanh toán và các khoản nợ của người thuê sẽ được cập nhật ở đây sau khi hoàn thiện Module Invoice." 
-          />
+          <TenantInvoices tenantId={tenant.id} />
         )}
       </div>
     </div>

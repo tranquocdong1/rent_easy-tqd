@@ -60,6 +60,7 @@ export interface InvoiceQuery {
   propertyId?: string;
   roomId?: string;
   contractId?: string;
+  tenantId?: string;
   month?: number;
   year?: number;
   sortBy?: string;
