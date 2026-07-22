@@ -55,13 +55,24 @@ export class PropertiesService {
         orderBy,
         skip,
         take,
+        include: {
+          _count: {
+            select: {
+              rooms: {
+                where: { deletedAt: null },
+              },
+            },
+          },
+        },
       }),
       this.prisma.property.count({ where }),
     ]);
 
     const totalPages = Math.ceil(totalItems / take);
 
-    const formattedItems = items.map((item) => PropertyResponseDto.fromEntity(item, 0));
+    const formattedItems = items.map((item) =>
+      PropertyResponseDto.fromEntity(item, item._count.rooms),
+    );
 
     return {
       data: {
@@ -159,7 +170,7 @@ export class PropertiesService {
 
     return {
       message: 'Success',
-      data: PropertyDetailResponseDto.fromEntityWithStats(property, 0, statistics),
+      data: PropertyDetailResponseDto.fromEntityWithStats(property, statistics.totalRooms, statistics),
     };
   }
 
@@ -254,9 +265,13 @@ export class PropertiesService {
         return updatedProperty;
       });
 
+      const roomCount = await this.prisma.room.count({
+        where: { propertyId: id, deletedAt: null },
+      });
+
       return {
         message: 'Property updated successfully',
-        data: PropertyResponseDto.fromEntity(property, 0),
+        data: PropertyResponseDto.fromEntity(property, roomCount),
       };
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
@@ -273,11 +288,9 @@ export class PropertiesService {
 
   // TODO: Refactor this logic once the Room module is implemented
   private async canDeleteProperty(propertyId: string): Promise<boolean> {
-    // Mock room count for now.
-    // In the future:
-    // const roomCount = await this.prisma.room.count({ where: { propertyId } });
-    // return roomCount === 0;
-    const roomCount = 0;
+    const roomCount = await this.prisma.room.count({
+      where: { propertyId, deletedAt: null },
+    });
     return roomCount === 0;
   }
 

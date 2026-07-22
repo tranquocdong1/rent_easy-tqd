@@ -22,16 +22,53 @@ export interface Invoice {
   createdAt: Date | string;
 }
 
+export interface InvoiceDetailSummary {
+  payments: number;
+  completedPayments: number;
+  paidAmount: number;
+  remainingAmount: number;
+}
+
+export interface InvoiceDetailContract {
+  id: string;
+  contractNumber: string;
+}
+
+export interface InvoiceDetailTenant {
+  id: string;
+  fullName: string;
+  phone: string;
+}
+
+export interface InvoiceDetailRoom {
+  id: string;
+  code: string;
+  name: string;
+}
+
+export interface InvoiceDetailProperty {
+  id: string;
+  name: string;
+}
+
 export interface InvoiceDetail {
   id: string;
   invoiceNumber: string;
-  contractId: string;
-  tenantName: string;
-  roomCode: string;
-  propertyName: string;
+  contractId?: string;
+  
+  contract: InvoiceDetailContract;
+  tenant: InvoiceDetailTenant;
+  room: InvoiceDetailRoom;
+  property: InvoiceDetailProperty;
+  summary: InvoiceDetailSummary;
+
+  tenantName?: string;
+  roomCode?: string;
+  propertyName?: string;
+  billingPeriod?: string;
+
   billingMonth: number;
   billingYear: number;
-  billingPeriod: string;
   issueDate: string;
   dueDate: string;
   

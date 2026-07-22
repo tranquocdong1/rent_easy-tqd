@@ -118,15 +118,15 @@ export default function InvoiceDetailPage() {
             <div className="space-y-1 text-sm mt-3">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Họ tên:</span>
-                <span className="font-medium">{invoice.tenant.fullName}</span>
+                <span className="font-medium">{invoice.tenant?.fullName || invoice.tenantName || '---'}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">SĐT:</span>
-                <span className="font-medium">{invoice.tenant.phone}</span>
+                <span className="font-medium">{invoice.tenant?.phone || '---'}</span>
               </div>
             </div>
           </div>
-          {/* <Link href={`/dashboard/tenants/${invoice.tenant.id}`} className="text-sm text-blue-600 hover:underline mt-2 inline-block">
+          {/* <Link href={`/dashboard/tenants/${invoice.tenant?.id}`} className="text-sm text-blue-600 hover:underline mt-2 inline-block">
             Xem chi tiết khách thuê →
           </Link> */}
         </div>
@@ -138,15 +138,19 @@ export default function InvoiceDetailPage() {
             <div className="space-y-1 text-sm mt-3">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Phòng:</span>
-                <span className="font-medium">{invoice.room.code} - {invoice.room.name}</span>
+                <span className="font-medium">
+                  {invoice.room?.code
+                    ? `${invoice.room.code}${invoice.room.name ? ` - ${invoice.room.name}` : ''}`
+                    : invoice.roomCode || '---'}
+                </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Nhà trọ:</span>
-                <span className="font-medium">{invoice.property.name}</span>
+                <span className="font-medium">{invoice.property?.name || invoice.propertyName || '---'}</span>
               </div>
             </div>
           </div>
-          {/* <Link href={`/dashboard/properties/${invoice.property.id}/rooms/${invoice.room.id}`} className="text-sm text-blue-600 hover:underline mt-2 inline-block">
+          {/* <Link href={`/dashboard/properties/${invoice.property?.id}/rooms/${invoice.room?.id}`} className="text-sm text-blue-600 hover:underline mt-2 inline-block">
             Xem chi tiết phòng →
           </Link> */}
         </div>
@@ -157,15 +161,15 @@ export default function InvoiceDetailPage() {
           <div className="space-y-2 text-sm mt-3">
             <div className="flex justify-between items-center">
               <span className="text-muted-foreground">Tổng cộng:</span>
-              <span className="font-medium">{invoice.summary.paidAmount + invoice.summary.remainingAmount > 0 ? (invoice.summary.paidAmount + invoice.summary.remainingAmount).toLocaleString('vi-VN') : invoice.totalAmount.toLocaleString('vi-VN')} đ</span>
+              <span className="font-medium">{Number(invoice.totalAmount || ((invoice.summary?.paidAmount || 0) + (invoice.summary?.remainingAmount || 0))).toLocaleString('vi-VN')} đ</span>
             </div>
             <div className="flex justify-between items-center text-green-600">
               <span className="">Đã thanh toán:</span>
-              <span className="font-medium">{invoice.summary.paidAmount.toLocaleString('vi-VN')} đ</span>
+              <span className="font-medium">{Number(invoice.summary?.paidAmount ?? invoice.paidAmount ?? 0).toLocaleString('vi-VN')} đ</span>
             </div>
             <div className="flex justify-between items-center pt-2 border-t border-primary/20 font-bold text-lg text-primary">
               <span>Còn lại:</span>
-              <span>{invoice.summary.remainingAmount.toLocaleString('vi-VN')} đ</span>
+              <span>{Number(invoice.summary?.remainingAmount ?? invoice.remainingAmount ?? 0).toLocaleString('vi-VN')} đ</span>
             </div>
           </div>
         </div>

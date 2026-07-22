@@ -162,10 +162,10 @@ export default function EditInvoicePage() {
             
             <div className="bg-muted/30 p-4 rounded-md text-sm space-y-3 border">
               <div className="grid grid-cols-2 gap-2">
-                <div><span className="font-medium text-muted-foreground">Kỳ hóa đơn:</span> {invoice.billingPeriod}</div>
-                <div><span className="font-medium text-muted-foreground">Khách thuê:</span> {invoice.tenantName}</div>
-                <div><span className="font-medium text-muted-foreground">Phòng:</span> {invoice.roomCode}</div>
-                <div><span className="font-medium text-muted-foreground">Tài sản:</span> {invoice.propertyName}</div>
+                <div><span className="font-medium text-muted-foreground">Kỳ hóa đơn:</span> {invoice.billingPeriod || `${String(invoice.billingMonth).padStart(2, '0')}/${invoice.billingYear}`}</div>
+                <div><span className="font-medium text-muted-foreground">Khách thuê:</span> {invoice.tenant?.fullName || invoice.tenantName || '---'}</div>
+                <div><span className="font-medium text-muted-foreground">Phòng:</span> {invoice.room?.code || invoice.roomCode || '---'}</div>
+                <div><span className="font-medium text-muted-foreground">Tài sản:</span> {invoice.property?.name || invoice.propertyName || '---'}</div>
               </div>
               <div className="pt-2 border-t">
                 <span className="font-medium text-muted-foreground">Tiền phòng cố định: </span>
