@@ -142,117 +142,129 @@ export class PaymentsService {
   }
 
   async create(ownerId: string, dto: CreatePaymentDto) {
-      const maxRetries = 3;
-      let attempt = 0;
+    const maxRetries = 3;
+    let attempt = 0;
 
-      while (attempt < maxRetries) {
-        try {
-          return await this.prisma.$transaction(async (tx) => {
-            // 1. Load Invoice with ownership and soft delete check
-            const invoice = await tx.invoice.findFirst({
-              where: {
-                id: dto.invoiceId,
+    const paymentDate = new Date(dto.paymentDate);
+    if (isNaN(paymentDate.getTime())) {
+      throw new BadRequestException({
+        message: 'Ngày thanh toán không hợp lệ',
+        code: 'INVALID_PAYMENT_DATE',
+      });
+    }
+
+    while (attempt < maxRetries) {
+      try {
+        return await this.prisma.$transaction(async (tx) => {
+          // 1. Load Invoice with ownership and soft delete check
+          const invoice = await tx.invoice.findFirst({
+            where: {
+              id: dto.invoiceId,
+              deletedAt: null,
+              contract: {
                 deletedAt: null,
-                contract: {
-                  deletedAt: null,
-                  room: { property: { ownerId } },
+                room: { property: { ownerId } },
+              },
+            },
+            include: {
+              contract: {
+                include: {
+                  tenant: true,
+                  room: { include: { property: true } },
                 },
               },
-              include: {
-                contract: {
-                  include: {
-                    tenant: true,
-                    room: { include: { property: true } },
-                  },
-                },
-              },
+            },
+          });
+
+          if (!invoice) {
+            throw new NotFoundException({
+              message: 'Không tìm thấy hóa đơn hoặc không có quyền truy cập',
+              code: 'INVOICE_NOT_FOUND',
             });
+          }
 
-            if (!invoice) {
-              throw new NotFoundException({
-                message: 'Không tìm thấy hóa đơn hoặc không có quyền truy cập',
-                code: 'INVOICE_NOT_FOUND',
-              });
-            }
-
-            // 2. Check Invoice Status
-            if (invoice.status === InvoiceStatus.PAID || invoice.status === InvoiceStatus.CANCELLED || (invoice.status as string) === 'VOID') {
-              throw new ConflictException({
-                message: 'Hóa đơn đã thanh toán hoặc đã hủy, không thể thanh toán thêm',
-                code: 'INVOICE_CANNOT_PAY',
-              });
-            }
-
-            // 3. Validate Amount vs Remaining
-            const totalAmount = Number(invoice.totalAmount);
-            const paidAmount = Number(invoice.paidAmount);
-            const remaining = totalAmount - paidAmount;
-
-            if (dto.amount > remaining) {
-              throw new ConflictException({
-                message: 'Số tiền thanh toán vượt quá số tiền còn lại của hóa đơn',
-                code: 'PAYMENT_EXCEEDS_REMAINING_AMOUNT',
-              });
-            }
-
-            // 4. Generate Receipt Number
-            const dateStr = new Date(dto.paymentDate).toISOString().slice(0, 7).replace('-', '');
-            const lastPayment = await tx.payment.findFirst({
-              where: { receiptNumber: { startsWith: `RCPT-${dateStr}-` } },
-              orderBy: { receiptNumber: 'desc' },
+          // 2. Check Invoice Status
+          if (invoice.status === InvoiceStatus.PAID || invoice.status === InvoiceStatus.CANCELLED || (invoice.status as string) === 'VOID') {
+            throw new ConflictException({
+              message: 'Hóa đơn đã thanh toán hoặc đã hủy, không thể thanh toán thêm',
+              code: 'INVOICE_CANNOT_PAY',
             });
+          }
 
-            let nextNum = 1;
-            if (lastPayment) {
-              const lastNum = parseInt(lastPayment.receiptNumber.split('-')[2], 10);
+          // 3. Validate Amount vs Remaining
+          const totalAmount = Number(invoice.totalAmount);
+          const paidAmount = Number(invoice.paidAmount);
+          const remaining = totalAmount - paidAmount;
+
+          if (dto.amount > remaining) {
+            throw new ConflictException({
+              message: 'Số tiền thanh toán vượt quá số tiền còn lại của hóa đơn',
+              code: 'PAYMENT_EXCEEDS_REMAINING_AMOUNT',
+            });
+          }
+
+          // 4. Generate Receipt Number
+          const dateStr = paymentDate.toISOString().slice(0, 7).replace('-', '');
+          const lastPayment = await tx.payment.findFirst({
+            where: { receiptNumber: { startsWith: `RCPT-${dateStr}-` } },
+            orderBy: { receiptNumber: 'desc' },
+          });
+
+          let nextNum = 1;
+          if (lastPayment && lastPayment.receiptNumber) {
+            const parts = lastPayment.receiptNumber.split('-');
+            const lastNum = parseInt(parts[parts.length - 1], 10);
+            if (!isNaN(lastNum)) {
               nextNum = lastNum + 1;
             }
-            const receiptNumber = `RCPT-${dateStr}-${nextNum.toString().padStart(4, '0')}`;
+          }
+          const receiptNumber = `RCPT-${dateStr}-${nextNum.toString().padStart(4, '0')}`;
 
-            // 5. Create Payment
-            const payment = await tx.payment.create({
-              data: {
-                invoiceId: dto.invoiceId,
-                receiptNumber,
-                paymentDate: new Date(dto.paymentDate),
-                amount: dto.amount,
-                paymentMethod: dto.paymentMethod,
-                referenceNumber: dto.referenceNumber,
-                note: dto.note,
-                status: PaymentStatus.COMPLETED,
-              },
-              include: {
-                invoice: {
-                  include: {
-                    contract: {
-                      include: {
-                        tenant: true,
-                        room: { include: { property: true } },
-                      },
+          // 5. Create Payment
+          const payment = await tx.payment.create({
+            data: {
+              invoiceId: dto.invoiceId,
+              receiptNumber,
+              paymentDate,
+              amount: dto.amount,
+              paymentMethod: dto.paymentMethod,
+              referenceNumber: dto.referenceNumber,
+              note: dto.note,
+              status: PaymentStatus.COMPLETED,
+            },
+            include: {
+              invoice: {
+                include: {
+                  contract: {
+                    include: {
+                      tenant: true,
+                      room: { include: { property: true } },
                     },
                   },
                 },
               },
-            });
+            },
+          });
 
-            // 6. Update Invoice
-            const newPaidAmount = paidAmount + dto.amount;
-            let newStatus: InvoiceStatus = invoice.status;
-            if (newPaidAmount >= totalAmount) {
-              newStatus = InvoiceStatus.PAID;
-            } else if (newPaidAmount > 0) {
-              newStatus = InvoiceStatus.PARTIALLY_PAID;
-            }
+          // 6. Update Invoice
+          const newPaidAmount = paidAmount + dto.amount;
+          let newStatus: InvoiceStatus = invoice.status;
+          if (newPaidAmount >= totalAmount) {
+            newStatus = InvoiceStatus.PAID;
+          } else if (newPaidAmount > 0) {
+            newStatus = InvoiceStatus.PARTIALLY_PAID;
+          }
 
-            await tx.invoice.update({
-              where: { id: invoice.id },
-              data: {
-                paidAmount: newPaidAmount,
-                status: newStatus,
-              },
-            });
+          await tx.invoice.update({
+            where: { id: invoice.id },
+            data: {
+              paidAmount: newPaidAmount,
+              status: newStatus,
+            },
+          });
 
-            // 7. Audit Log
+          // 7. Audit Log
+          try {
             await tx.auditLog.create({
               data: {
                 userId: ownerId,
@@ -273,30 +285,32 @@ export class PaymentsService {
                 },
               },
             });
-
-            return {
-              message: 'Payment created successfully',
-              data: PaymentResponseDto.fromEntity(payment),
-            };
-          }, {
-            isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
-          });
-        } catch (error: any) {
-          // Handle serialization failure (P2034) or unique constraint violation (P2002)
-          if (error.code === 'P2034' || error.code === 'P2002') {
-            attempt++;
-            if (attempt >= maxRetries) {
-              throw new ConflictException({
-                message: 'Hệ thống đang bận, vui lòng thử lại sau',
-                code: 'PAYMENT_CONCURRENCY_ERROR',
-              });
-            }
-            // Continue to next iteration to retry
-            continue;
+          } catch (auditErr) {
+            console.error('Failed to log audit event for payment creation:', auditErr);
           }
-          // Rethrow other errors (e.g. NotFound, BadRequest from inside tx)
-          throw error;
+
+          return {
+            message: 'Payment created successfully',
+            data: PaymentResponseDto.fromEntity(payment),
+          };
+        });
+      } catch (error: any) {
+        // Handle serialization failure (P2034) or unique constraint violation (P2002)
+        if (error.code === 'P2034' || error.code === 'P2002') {
+          attempt++;
+          if (attempt >= maxRetries) {
+            throw new ConflictException({
+              message: 'Hệ thống đang bận, vui lòng thử lại sau',
+              code: 'PAYMENT_CONCURRENCY_ERROR',
+            });
+          }
+          // Continue to next iteration to retry
+          continue;
         }
+        // Rethrow other errors (e.g. NotFound, BadRequest from inside tx)
+        throw error;
       }
     }
   }
+}
+

@@ -734,6 +734,9 @@ export default function ContractDetailPage() {
               <Ban className="h-5 w-5 text-amber-600" />
               Chấm dứt Hợp đồng sớm
             </AlertDialogTitle>
+            <AlertDialogDescription className="text-xs text-slate-500 font-medium">
+              Chấm dứt hợp đồng sớm trước thời hạn pháp lý. Trạng thái phòng sẽ được trả về Còn trống (AVAILABLE).
+            </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="space-y-4 py-2 text-sm text-slate-700">
             <p className="text-xs text-slate-500 font-medium">
