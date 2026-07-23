@@ -394,9 +394,14 @@ function PropertiesPageContent() {
                       )}
                     </td>
                     <td className="py-4 px-3 text-center">
-                      <span className="inline-flex items-center font-extrabold text-slate-900 bg-slate-100 px-3 py-1 rounded-md text-sm sm:text-base whitespace-nowrap">
+                      <Link
+                        href={`/dashboard/properties/${property.id}/rooms`}
+                        className="inline-flex items-center gap-1.5 font-extrabold text-slate-900 dark:text-slate-100 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 px-3 py-1 rounded-md text-sm sm:text-base whitespace-nowrap transition-colors"
+                        title="Xem danh sách phòng"
+                      >
+                        <DoorOpen className="h-4 w-4 text-slate-600 dark:text-slate-400" />
                         {property.roomCount} phòng
-                      </span>
+                      </Link>
                     </td>
                     <td className="py-4 px-3 text-sm font-medium text-slate-600 whitespace-nowrap">
                       {new Date(property.updatedAt).toLocaleDateString("vi-VN")}
@@ -407,7 +412,19 @@ function PropertiesPageContent() {
                           asChild
                           variant="outline"
                           size="sm"
-                          className="h-8 px-2.5 rounded-lg text-xs font-bold border-slate-300 text-slate-900 hover:bg-slate-900 hover:text-white transition-colors whitespace-nowrap"
+                          className="h-8 px-2.5 rounded-lg text-xs font-bold border-slate-300 text-slate-900 dark:text-slate-100 dark:border-slate-700 hover:bg-slate-900 hover:text-white dark:hover:bg-slate-100 dark:hover:text-slate-900 transition-colors whitespace-nowrap"
+                        >
+                          <Link href={`/dashboard/properties/${property.id}/rooms`}>
+                            <DoorOpen className="h-3.5 w-3.5 mr-1" />
+                            Phòng trọ
+                          </Link>
+                        </Button>
+
+                        <Button
+                          asChild
+                          variant="outline"
+                          size="sm"
+                          className="h-8 px-2.5 rounded-lg text-xs font-bold border-slate-300 text-slate-900 dark:text-slate-100 dark:border-slate-700 hover:bg-slate-900 hover:text-white dark:hover:bg-slate-100 dark:hover:text-slate-900 transition-colors whitespace-nowrap"
                         >
                           <Link href={`/dashboard/properties/${property.id}`}>
                             Chi tiết
@@ -418,7 +435,7 @@ function PropertiesPageContent() {
                           asChild
                           variant="outline"
                           size="sm"
-                          className="h-8 px-2.5 rounded-lg text-xs font-bold border-slate-300 text-slate-900 hover:bg-slate-900 hover:text-white transition-colors whitespace-nowrap"
+                          className="h-8 px-2.5 rounded-lg text-xs font-bold border-slate-300 text-slate-900 dark:text-slate-100 dark:border-slate-700 hover:bg-slate-900 hover:text-white dark:hover:bg-slate-100 dark:hover:text-slate-900 transition-colors whitespace-nowrap"
                         >
                           <Link href={`/dashboard/properties/${property.id}/edit`}>
                             <Pencil className="h-3.5 w-3.5 mr-1" />
