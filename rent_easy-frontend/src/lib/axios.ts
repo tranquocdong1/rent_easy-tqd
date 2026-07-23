@@ -57,7 +57,7 @@ api.interceptors.response.use(
         processQueue(refreshError, null);
         
         useAuthStore.getState().clearAuth();
-        if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+        if (typeof window !== 'undefined' && window.location.pathname.startsWith('/dashboard')) {
           window.location.href = '/login';
         }
         return Promise.reject(refreshError);

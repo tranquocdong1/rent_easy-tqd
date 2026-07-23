@@ -578,7 +578,7 @@ export default function DashboardPage() {
                   <div className="p-2 rounded-lg bg-slate-200 text-slate-900 group-hover:bg-slate-800 group-hover:text-white transition-colors">
                     <PlusCircle className="h-5 w-5" />
                   </div>
-                  <span>Thêm Property</span>
+                  <span>Thêm Nhà trọ</span>
                 </div>
                 <ChevronRight className="h-4.5 w-4.5 text-slate-400 group-hover:text-white group-hover:translate-x-1 transition-all" />
               </Link>
