@@ -12,6 +12,7 @@ CREATE TABLE "Payment" (
     "amount" DECIMAL(12,2) NOT NULL,
     "paymentDate" TIMESTAMP(3) NOT NULL,
     "paymentMethod" "PaymentMethod" NOT NULL,
+    "referenceNumber" VARCHAR(100),
     "status" "PaymentStatus" NOT NULL DEFAULT 'PENDING',
     "note" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
