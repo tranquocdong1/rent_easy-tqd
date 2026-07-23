@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useAuthStore } from "@/lib/auth-store";
-import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { Button } from "@/components/ui/button";
 import {
   Home,
@@ -96,8 +95,6 @@ export default function LandingPage() {
           </Link>
 
           <div className="flex items-center gap-3">
-            <ThemeToggle />
-
             {isAuthenticated ? (
               <div className="flex items-center gap-3">
                 <Button
