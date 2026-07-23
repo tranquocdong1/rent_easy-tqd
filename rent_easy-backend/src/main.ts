@@ -9,8 +9,23 @@ async function bootstrap() {
   app.setGlobalPrefix('api');
   app.use(cookieParser());
   
+  const rawFrontendUrl = process.env.FRONTEND_URL || 'http://localhost:3001';
+  const allowedOrigins = rawFrontendUrl.split(',').map((u) => u.trim().replace(/\/$/, ''));
+
   app.enableCors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:3001',
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true);
+      const normalizedOrigin = origin.replace(/\/$/, '');
+      if (
+        allowedOrigins.includes(normalizedOrigin) ||
+        normalizedOrigin.endsWith('.vercel.app') ||
+        process.env.NODE_ENV !== 'production'
+      ) {
+        callback(null, true);
+      } else {
+        callback(null, true);
+      }
+    },
     credentials: true,
   });
 

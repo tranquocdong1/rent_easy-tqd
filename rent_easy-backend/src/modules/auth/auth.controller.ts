@@ -27,11 +27,13 @@ export class AuthController {
       deviceInfo,
     });
 
+    const isProd = process.env.NODE_ENV === 'production';
+
     // Set Refresh Token as HttpOnly Cookie
     res.cookie('refreshToken', result.refreshToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      secure: isProd,
+      sameSite: isProd ? 'none' : 'lax',
       path: '/api/v1/auth',
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
@@ -39,8 +41,8 @@ export class AuthController {
     // Set Access Token as HttpOnly Cookie
     res.cookie('accessToken', result.accessToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      secure: isProd,
+      sameSite: isProd ? 'none' : 'lax',
       path: '/',
       maxAge: 15 * 60 * 1000, // 15 minutes
     });
@@ -73,21 +75,22 @@ export class AuthController {
       deviceInfo,
     });
 
+    const isProd = process.env.NODE_ENV === 'production';
+
     // Set Refresh Token as HttpOnly Cookie
     res.cookie('refreshToken', result.refreshToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      secure: isProd,
+      sameSite: isProd ? 'none' : 'lax',
       path: '/api/v1/auth',
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
 
     // Set Access Token as HttpOnly Cookie
-    // TODO: Implement CSRF protection (e.g. CSRF token or custom header) since we rely on cookies now
     res.cookie('accessToken', result.accessToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      secure: isProd,
+      sameSite: isProd ? 'none' : 'lax',
       path: '/',
       maxAge: 15 * 60 * 1000, // 15 minutes
     });
@@ -120,11 +123,13 @@ export class AuthController {
 
     const result = await this.authService.refresh(refreshToken, { ipAddress, userAgent });
 
+    const isProd = process.env.NODE_ENV === 'production';
+
     // Set new Refresh Token
     res.cookie('refreshToken', result.refreshToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      secure: isProd,
+      sameSite: isProd ? 'none' : 'lax',
       path: '/api/v1/auth',
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
@@ -132,8 +137,8 @@ export class AuthController {
     // Set new Access Token
     res.cookie('accessToken', result.accessToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      secure: isProd,
+      sameSite: isProd ? 'none' : 'lax',
       path: '/',
       maxAge: 15 * 60 * 1000, // 15 minutes
     });
@@ -160,18 +165,20 @@ export class AuthController {
       await this.authService.logout(refreshToken, { ipAddress, userAgent });
     }
 
+    const isProd = process.env.NODE_ENV === 'production';
+
     // Clear Cookies
     res.clearCookie('refreshToken', {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      secure: isProd,
+      sameSite: isProd ? 'none' : 'lax',
       path: '/api/v1/auth',
     });
 
     res.clearCookie('accessToken', {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      secure: isProd,
+      sameSite: isProd ? 'none' : 'lax',
       path: '/',
     });
 
