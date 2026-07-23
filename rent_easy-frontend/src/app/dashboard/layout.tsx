@@ -106,7 +106,7 @@ export default function DashboardLayout({
   const userInitial = user?.fullName ? user.fullName.charAt(0).toUpperCase() : "U";
 
   return (
-    <div className="flex min-h-screen bg-slate-50/60">
+    <div className="flex min-h-screen bg-slate-50">
       {/* Sidebar Desktop */}
       <aside className="hidden lg:flex w-64 flex-col fixed inset-y-0 z-40 bg-white border-r border-slate-200/90 shadow-2xs justify-between">
         <div className="flex flex-col flex-1 min-h-0">
