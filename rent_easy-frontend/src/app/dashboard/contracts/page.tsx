@@ -353,16 +353,16 @@ export default function ContractsPage() {
 
         {/* Contracts Table View */}
         <div className="overflow-x-auto relative">
-          <table className="w-full text-left table-fixed min-w-[850px]">
+          <table className="w-full text-left table-fixed min-w-[1050px]">
             <thead>
               <tr className="text-slate-500 border-b border-slate-200/90 font-bold text-xs uppercase tracking-wider">
-                <th className="w-[15%] pb-4 pr-4 whitespace-nowrap">Mã Hợp đồng</th>
-                <th className="w-[18%] pb-4 px-3 whitespace-nowrap">Khách thuê</th>
-                <th className="w-[22%] pb-4 px-3 whitespace-nowrap">Khu trọ / Phòng</th>
-                <th className="w-[18%] pb-4 px-3 whitespace-nowrap">Thời hạn</th>
-                <th className="w-[12%] pb-4 px-3 text-right whitespace-nowrap">Tiền thuê</th>
-                <th className="w-[15%] pb-4 px-3 whitespace-nowrap">Trạng thái</th>
-                <th className="w-[15%] pb-4 pl-3 text-right whitespace-nowrap">Thao tác</th>
+                <th className="w-[14%] pb-4 pr-4 whitespace-nowrap">Mã Hợp đồng</th>
+                <th className="w-[16%] pb-4 px-3 whitespace-nowrap">Khách thuê</th>
+                <th className="w-[19%] pb-4 px-3 whitespace-nowrap">Khu trọ / Phòng</th>
+                <th className="w-[17%] pb-4 px-3 whitespace-nowrap">Thời hạn</th>
+                <th className="w-[11%] pb-4 px-3 text-right whitespace-nowrap">Tiền thuê</th>
+                <th className="w-[13%] pb-4 px-3 whitespace-nowrap">Trạng thái</th>
+                <th className="w-[20%] pb-4 pl-3 text-right whitespace-nowrap">Thao tác</th>
               </tr>
             </thead>
             <tbody
