@@ -314,11 +314,11 @@ function PropertiesPageContent() {
 
         {/* Properties Table View with Proper Column Widths & Whitespace Handling */}
         <div className="overflow-x-auto relative">
-          <table className="w-full text-left table-fixed min-w-[760px]">
+          <table className="w-full text-left table-fixed min-w-[1000px]">
             <thead>
               <tr className="text-slate-500 border-b border-slate-200/90 font-bold text-xs uppercase tracking-wider">
                 <th
-                  className="w-[28%] pb-4 pr-4 cursor-pointer hover:text-slate-900 transition-colors select-none whitespace-nowrap"
+                  className="w-[22%] pb-4 pr-4 cursor-pointer hover:text-slate-900 transition-colors select-none whitespace-nowrap"
                   onClick={() => handleSort("name")}
                 >
                   <div className="flex items-center gap-1.5">
@@ -326,11 +326,11 @@ function PropertiesPageContent() {
                     <ArrowUpDown className={`h-3.5 w-3.5 ${query.sortBy === 'name' ? 'text-slate-900 font-bold' : 'text-slate-400'}`} />
                   </div>
                 </th>
-                <th className="w-[18%] pb-4 px-3 whitespace-nowrap">Loại hình</th>
-                <th className="w-[15%] pb-4 px-3 whitespace-nowrap">Trạng thái</th>
+                <th className="w-[14%] pb-4 px-3 whitespace-nowrap">Loại hình</th>
+                <th className="w-[13%] pb-4 px-3 whitespace-nowrap">Trạng thái</th>
                 <th className="w-[11%] pb-4 px-3 text-center whitespace-nowrap">Số phòng</th>
                 <th
-                  className="w-[13%] pb-4 px-3 cursor-pointer hover:text-slate-900 transition-colors select-none whitespace-nowrap"
+                  className="w-[14%] pb-4 px-3 cursor-pointer hover:text-slate-900 transition-colors select-none whitespace-nowrap"
                   onClick={() => handleSort("updatedAt")}
                 >
                   <div className="flex items-center gap-1.5">
@@ -338,7 +338,7 @@ function PropertiesPageContent() {
                     <ArrowUpDown className={`h-3.5 w-3.5 ${query.sortBy === 'updatedAt' ? 'text-slate-900 font-bold' : 'text-slate-400'}`} />
                   </div>
                 </th>
-                <th className="w-[15%] pb-4 pl-3 text-right whitespace-nowrap">Thao tác</th>
+                <th className="w-[26%] pb-4 pl-3 text-right whitespace-nowrap">Thao tác</th>
               </tr>
             </thead>
             <tbody className={`divide-y divide-slate-100 transition-opacity duration-200 ${isRefreshing ? "opacity-50 pointer-events-none" : "opacity-100"}`}>

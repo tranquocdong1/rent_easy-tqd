@@ -333,15 +333,15 @@ export default function RoomsPage({ params }: { params: Promise<{ id: string }> 
       {/* 4. Main Rooms Table with fixed layout */}
       <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-2xs overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left table-fixed min-w-[750px]">
+          <table className="w-full text-left table-fixed min-w-[900px]">
             <thead>
               <tr className="bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200/90 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-bold text-xs uppercase tracking-wider">
-                <th className="w-[16%] py-4 px-4">Mã phòng</th>
-                <th className="w-[20%] py-4 px-3">Tên phòng</th>
-                <th className="w-[12%] py-4 px-3">Tầng</th>
-                <th className="w-[18%] py-4 px-3 text-right">Giá thuê</th>
+                <th className="w-[15%] py-4 px-4">Mã phòng</th>
+                <th className="w-[18%] py-4 px-3">Tên phòng</th>
+                <th className="w-[10%] py-4 px-3">Tầng</th>
+                <th className="w-[17%] py-4 px-3 text-right">Giá thuê</th>
                 <th className="w-[18%] py-4 px-3">Trạng thái</th>
-                <th className="w-[16%] py-4 pr-4 text-right">Thao tác</th>
+                <th className="w-[22%] py-4 pr-4 text-right">Thao tác</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">

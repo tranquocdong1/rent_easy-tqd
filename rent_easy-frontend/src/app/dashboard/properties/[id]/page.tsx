@@ -290,28 +290,6 @@ export default function PropertyDetailPage() {
             </div>
           </div>
 
-          {/* Quick Action Navigation Links to Rooms */}
-          <div className="pt-3 border-t border-slate-100 dark:border-slate-800 space-y-2.5">
-            <Button
-              asChild
-              className="w-full rounded-xl bg-slate-800 hover:bg-slate-900 dark:bg-slate-100 dark:hover:bg-white text-white dark:text-slate-900 font-bold text-xs h-10 gap-2 shadow-2xs"
-            >
-              <Link href={`/dashboard/properties/${property.id}/rooms`}>
-                <DoorOpen className="h-4 w-4" />
-                Quản lý Danh sách Phòng
-              </Link>
-            </Button>
-            <Button
-              asChild
-              variant="outline"
-              className="w-full rounded-xl border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-200 font-bold text-xs h-10 gap-2"
-            >
-              <Link href={`/dashboard/properties/${property.id}/rooms/new`}>
-                <PlusCircle className="h-4 w-4" />
-                + Tạo Phòng trọ mới
-              </Link>
-            </Button>
-          </div>
         </div>
       </div>
 
@@ -358,15 +336,15 @@ export default function PropertyDetailPage() {
 
         {/* Rooms Table */}
         <div className="overflow-x-auto">
-          <table className="w-full text-left table-fixed min-w-[700px]">
+          <table className="w-full text-left table-fixed min-w-[850px]">
             <thead>
               <tr className="text-slate-500 dark:text-slate-400 border-b border-slate-200/90 dark:border-slate-800 font-bold text-xs uppercase tracking-wider">
-                <th className="w-[18%] pb-3 pr-3">Mã phòng</th>
-                <th className="w-[22%] pb-3 px-2">Tên phòng</th>
-                <th className="w-[14%] pb-3 px-2">Tầng</th>
+                <th className="w-[16%] pb-3 pr-3">Mã phòng</th>
+                <th className="w-[20%] pb-3 px-2">Tên phòng</th>
+                <th className="w-[12%] pb-3 px-2">Tầng</th>
                 <th className="w-[16%] pb-3 px-2">Giá thuê</th>
                 <th className="w-[18%] pb-3 px-2">Trạng thái</th>
-                <th className="w-[12%] pb-3 pl-2 text-right">Thao tác</th>
+                <th className="w-[18%] pb-3 pl-2 text-right">Thao tác</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
