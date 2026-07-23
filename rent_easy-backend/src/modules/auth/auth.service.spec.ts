@@ -4,7 +4,7 @@ import { UsersService } from '../users/users.service';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { AuditService } from '../audit/audit.service';
-import { UnauthorizedException, ForbiddenException } from '@nestjs/common';
+import { UnauthorizedException, ForbiddenException, ConflictException } from '@nestjs/common';
 import * as argon2 from 'argon2';
 import { AuditAction } from '@prisma/client';
 import { PrismaService } from '../../common/prisma/prisma.service';
@@ -33,6 +33,9 @@ describe('AuthService', () => {
       createSession: jest.fn(),
     };
     prismaService = {
+      user: {
+        create: jest.fn(),
+      },
       $transaction: jest.fn(async (cb) => {
         return cb({
           auditLog: { create: jest.fn() }
@@ -85,5 +88,42 @@ describe('AuthService', () => {
     expect(result).toHaveProperty('refreshToken');
     expect(result.user.id).toBe('1');
     expect(prismaService.$transaction).toHaveBeenCalled();
+  });
+
+  describe('register', () => {
+    it('should throw ConflictException if email already exists', async () => {
+      (usersService.findByEmail as jest.Mock).mockResolvedValue({ id: '1', email: 'existing@test.com' });
+      await expect(
+        authService.register(
+          { email: 'existing@test.com', password: 'password123', fullName: 'New User' },
+          mockReqMeta,
+        ),
+      ).rejects.toThrow(ConflictException);
+    });
+
+    it('should register user successfully', async () => {
+      const mockCreatedUser = {
+        id: 'user-new-123',
+        email: 'newuser@test.com',
+        fullName: 'New User',
+        avatarUrl: null,
+        role: 'OWNER',
+        isActive: true,
+      };
+
+      (usersService.findByEmail as jest.Mock).mockResolvedValue(null);
+      (argon2.hash as jest.Mock).mockResolvedValue('hashed_password');
+      prismaService.user.create.mockResolvedValue(mockCreatedUser);
+
+      const result = await authService.register(
+        { email: 'newuser@test.com', password: 'password123', fullName: 'New User' },
+        mockReqMeta,
+      );
+
+      expect(result).toHaveProperty('accessToken');
+      expect(result).toHaveProperty('refreshToken');
+      expect(result.user.email).toBe('newuser@test.com');
+      expect(prismaService.user.create).toHaveBeenCalled();
+    });
   });
 });

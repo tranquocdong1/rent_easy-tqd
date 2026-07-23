@@ -13,6 +13,9 @@ export default function Home() {
             <Link href="/login">Đăng nhập</Link>
           </Button>
           <Button asChild variant="outline">
+            <Link href="/register">Đăng ký</Link>
+          </Button>
+          <Button asChild variant="outline">
             <Link href="/dashboard">Dashboard</Link>
           </Button>
           <Button asChild variant="outline">

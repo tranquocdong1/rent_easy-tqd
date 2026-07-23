@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException, ForbiddenException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, ForbiddenException, ConflictException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as argon2 from 'argon2';
@@ -6,6 +6,7 @@ import * as crypto from 'crypto';
 import { UsersService } from '../users/users.service';
 import { AuditService } from '../audit/audit.service';
 import { LoginDto } from './dto/login.dto';
+import { RegisterDto } from './dto/register.dto';
 import { AuditAction, RefreshSessionRevokeReason } from '@prisma/client';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { RefreshSessionService } from './refresh-session.service';
@@ -21,6 +22,82 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly refreshSessionService: RefreshSessionService,
   ) {}
+
+  async register(registerDto: RegisterDto, reqMeta: { ipAddress: string; userAgent: string; deviceInfo: string }) {
+    const existingUser = await this.usersService.findByEmail(registerDto.email);
+    if (existingUser) {
+      throw new ConflictException({
+        message: 'Email đã được sử dụng trong hệ thống.',
+        code: 'EMAIL_ALREADY_EXISTS',
+        statusCode: 409,
+        error: 'Conflict',
+      });
+    }
+
+    const passwordHash = await argon2.hash(registerDto.password);
+
+    const user = await this.prisma.user.create({
+      data: {
+        email: registerDto.email,
+        passwordHash,
+        fullName: registerDto.fullName,
+        role: 'OWNER',
+        isActive: true,
+      },
+    });
+
+    const sessionId = crypto.randomUUID();
+    const refreshTokenPayload = { sub: user.id, sid: sessionId, jti: crypto.randomUUID() };
+    const refreshSecret = this.configService.get<string>('JWT_REFRESH_SECRET') || 'refreshSecret';
+
+    const refreshToken = this.jwtService.sign(refreshTokenPayload, {
+      secret: refreshSecret,
+      expiresIn: '7d',
+    });
+
+    const decodedRefresh = this.jwtService.decode(refreshToken) as { exp: number };
+    const expiresAt = new Date(decodedRefresh.exp * 1000);
+    const refreshTokenHash = hashToken(refreshToken);
+
+    const accessTokenPayload = { sub: user.id, role: user.role };
+    const expiresIn = 900; // 15 minutes
+    const accessToken = this.jwtService.sign(accessTokenPayload, {
+      secret: this.configService.get<string>('JWT_ACCESS_SECRET') || 'accessSecret',
+      expiresIn: expiresIn,
+    });
+
+    await this.prisma.$transaction(async (tx) => {
+      await this.refreshSessionService.createSession(tx, {
+        id: sessionId,
+        userId: user.id,
+        tokenHash: refreshTokenHash,
+        expiresAt,
+        ipAddress: reqMeta.ipAddress,
+        userAgent: reqMeta.userAgent,
+      });
+
+      await tx.auditLog.create({
+        data: {
+          userId: user.id,
+          action: AuditAction.LOGIN_SUCCESS,
+          metadata: { ...reqMeta, action: 'REGISTER' } as any,
+        },
+      });
+    });
+
+    return {
+      accessToken,
+      expiresIn,
+      refreshToken,
+      user: {
+        id: user.id,
+        email: user.email,
+        fullName: user.fullName,
+        avatarUrl: user.avatarUrl,
+        role: user.role,
+      },
+    };
+  }
 
   async login(loginDto: LoginDto, reqMeta: { ipAddress: string; userAgent: string; deviceInfo: string }) {
     // 1. Find User

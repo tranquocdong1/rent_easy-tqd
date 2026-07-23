@@ -6,20 +6,38 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import api from "@/lib/axios";
+import { authApi } from "@/services/api/auth";
 import { useAuthStore } from "@/lib/auth-store";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 
-const loginSchema = z.object({
-  email: z.string().email({ message: "Email không hợp lệ" }),
-  password: z.string().min(8, { message: "Mật khẩu tối thiểu 8 ký tự" }),
-});
+const registerSchema = z
+  .object({
+    fullName: z
+      .string()
+      .trim()
+      .min(2, { message: "Họ và tên tối thiểu 2 ký tự" })
+      .max(150, { message: "Họ và tên tối đa 150 ký tự" }),
+    email: z
+      .string()
+      .trim()
+      .email({ message: "Email không hợp lệ" }),
+    password: z
+      .string()
+      .min(8, { message: "Mật khẩu tối thiểu 8 ký tự" }),
+    confirmPassword: z
+      .string()
+      .min(1, { message: "Vui lòng xác nhận mật khẩu" }),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Mật khẩu xác nhận không khớp",
+    path: ["confirmPassword"],
+  });
 
-type LoginFormValues = z.infer<typeof loginSchema>;
+type RegisterFormValues = z.infer<typeof registerSchema>;
 
-export default function LoginPage() {
+export default function RegisterPage() {
   const router = useRouter();
   const setAuth = useAuthStore((state) => state.setAuth);
   const [error, setError] = useState<string | null>(null);
@@ -28,25 +46,29 @@ export default function LoginPage() {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
-  } = useForm<LoginFormValues>({
-    resolver: zodResolver(loginSchema),
+  } = useForm<RegisterFormValues>({
+    resolver: zodResolver(registerSchema),
   });
 
-  const onSubmit = async (data: LoginFormValues) => {
+  const onSubmit = async (data: RegisterFormValues) => {
     setError(null);
     try {
-      const response = await api.post("/v1/auth/login", data);
-      const { user } = response.data.data;
-      
+      const response = await authApi.register({
+        fullName: data.fullName,
+        email: data.email,
+        password: data.password,
+      });
+
+      const { user } = response.data;
       setAuth(user);
-      
-      // Redirect to dashboard
+
+      // Redirect to dashboard upon successful registration
       router.push("/dashboard");
     } catch (err: any) {
       if (err.response?.data?.message) {
         setError(err.response.data.message);
       } else {
-        setError("Đã có lỗi xảy ra. Vui lòng thử lại sau.");
+        setError("Đã có lỗi xảy ra trong quá trình đăng ký. Vui lòng thử lại sau.");
       }
     }
   };
@@ -59,7 +81,7 @@ export default function LoginPage() {
             Rent Easy
           </h1>
           <p className="mt-2 text-sm text-slate-600">
-            Đăng nhập để quản lý nhà trọ của bạn
+            Đăng ký tài khoản mới để quản lý nhà trọ
           </p>
         </div>
 
@@ -70,6 +92,19 @@ export default function LoginPage() {
         )}
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="fullName">Họ và tên</Label>
+            <Input
+              id="fullName"
+              type="text"
+              placeholder="Nguyễn Văn A"
+              {...register("fullName")}
+            />
+            {errors.fullName && (
+              <p className="text-xs text-red-500">{errors.fullName.message}</p>
+            )}
+          </div>
+
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <Input
@@ -88,6 +123,7 @@ export default function LoginPage() {
             <Input
               id="password"
               type="password"
+              placeholder="••••••••"
               {...register("password")}
             />
             {errors.password && (
@@ -95,17 +131,32 @@ export default function LoginPage() {
             )}
           </div>
 
+          <div className="space-y-2">
+            <Label htmlFor="confirmPassword">Nhập lại mật khẩu</Label>
+            <Input
+              id="confirmPassword"
+              type="password"
+              placeholder="••••••••"
+              {...register("confirmPassword")}
+            />
+            {errors.confirmPassword && (
+              <p className="text-xs text-red-500">
+                {errors.confirmPassword.message}
+              </p>
+            )}
+          </div>
+
           <Button type="submit" className="w-full" disabled={isSubmitting}>
-            {isSubmitting ? "Đang đăng nhập..." : "Đăng nhập"}
+            {isSubmitting ? "Đang đăng ký..." : "Đăng ký"}
           </Button>
 
           <div className="pt-2 text-center text-sm text-slate-600">
-            Chưa có tài khoản?{" "}
+            Đã có tài khoản?{" "}
             <Link
-              href="/register"
+              href="/login"
               className="font-medium text-slate-900 underline hover:text-slate-700"
             >
-              Đăng ký ngay
+              Đăng nhập ngay
             </Link>
           </div>
         </form>

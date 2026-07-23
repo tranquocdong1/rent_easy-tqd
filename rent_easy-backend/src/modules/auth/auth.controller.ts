@@ -1,14 +1,63 @@
-import { Controller, Post, Body, Req, Res, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Body, Req, Res, HttpCode, HttpStatus, UseGuards } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
+import { RegisterDto } from './dto/register.dto';
+import { RateLimiterGuard } from '../../common/guards/rate-limiter.guard';
+import { RateLimit } from '../../common/decorators/rate-limit.decorator';
 
 @Controller('v1/auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  @Post('register')
+  @HttpCode(HttpStatus.CREATED)
+  async register(
+    @Body() registerDto: RegisterDto,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const ipAddress = req.ip || req.headers['x-forwarded-for']?.toString() || 'unknown';
+    const userAgent = req.headers['user-agent'] || 'unknown';
+    const deviceInfo = userAgent;
+
+    const result = await this.authService.register(registerDto, {
+      ipAddress,
+      userAgent,
+      deviceInfo,
+    });
+
+    // Set Refresh Token as HttpOnly Cookie
+    res.cookie('refreshToken', result.refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      path: '/api/v1/auth',
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    });
+
+    // Set Access Token as HttpOnly Cookie
+    res.cookie('accessToken', result.accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      path: '/',
+      maxAge: 15 * 60 * 1000, // 15 minutes
+    });
+
+    return {
+      message: 'Đăng ký tài khoản thành công',
+      data: {
+        expiresIn: result.expiresIn,
+        user: result.user,
+      },
+    };
+  }
+
   @Post('login')
   @HttpCode(HttpStatus.OK)
+  @UseGuards(RateLimiterGuard)
+  @RateLimit({ limit: 5, ttl: 60 })
   async login(
     @Body() loginDto: LoginDto,
     @Req() req: Request,
