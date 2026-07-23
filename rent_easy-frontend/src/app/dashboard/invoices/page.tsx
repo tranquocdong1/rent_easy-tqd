@@ -48,12 +48,12 @@ function StatusSelect({
 
   const options: { label: string; value: InvoiceStatus | "ALL" }[] = [
     { label: "Tất cả trạng thái", value: "ALL" },
-    { label: "Đã thanh toán", value: "PAID" },
-    { label: "Chưa thanh toán", value: "UNPAID" },
-    { label: "Thanh toán 1 phần", value: "PARTIALLY_PAID" },
-    { label: "Quá hạn", value: "OVERDUE" },
-    { label: "Nháp", value: "DRAFT" },
-    { label: "Đã hủy", value: "CANCELLED" },
+    { label: "Đã thanh toán", value: InvoiceStatus.PAID },
+    { label: "Chưa thanh toán", value: InvoiceStatus.UNPAID },
+    { label: "Thanh toán 1 phần", value: InvoiceStatus.PARTIALLY_PAID },
+    { label: "Quá hạn", value: InvoiceStatus.OVERDUE },
+    { label: "Nháp", value: InvoiceStatus.DRAFT },
+    { label: "Đã hủy", value: InvoiceStatus.CANCELLED },
   ];
 
   const selectedOption = options.find((o) => o.value === (value || "ALL")) || options[0];

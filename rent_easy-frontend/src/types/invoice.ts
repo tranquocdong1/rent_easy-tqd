@@ -22,6 +22,8 @@ export interface Invoice {
   createdAt: Date | string;
 }
 
+export type InvoiceListItem = Invoice;
+
 export interface InvoiceDetailSummary {
   payments: number;
   completedPayments: number;

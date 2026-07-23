@@ -25,7 +25,7 @@ function CustomSelect({
   options,
   placeholder = "Chọn...",
 }: {
-  value?: string;
+  value?: string | null;
   onChange: (val: string) => void;
   options: { label: string; value: string }[];
   placeholder?: string;

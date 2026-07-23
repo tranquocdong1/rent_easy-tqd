@@ -18,6 +18,8 @@ export interface Payment {
   propertyName: string;
 }
 
+export type PaymentListItem = Payment;
+
 export interface PaymentQuery {
   page?: number;
   limit?: number;
